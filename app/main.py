@@ -1398,7 +1398,78 @@ async def root():
             "seismic_analysis": "/usgs/earthquakes/nearby"
         }
     }
-
+@app.get("/asteroids/timeframe-prediction")
+async def get_asteroids_by_timeframe(
+    years: int = Query(10, ge=1, le=100),
+    threat_level: str = Query("ALL")
+):
+    """Discover asteroids within timeframe"""
+    
+    df = db.get_all_asteroids()
+    
+    if df.empty:
+        raise HTTPException(status_code=404, detail="No asteroid data available")
+    
+    predicted_threats = []
+    
+    for idx, asteroid in df.iterrows():
+        distance_au = asteroid['miss_distance_km'] / 149597870.7
+        
+        # توزيع حسب المسافة
+        if distance_au <= 0.05:
+            estimated_years = 1
+        elif distance_au <= 0.1:
+            estimated_years = 5
+        elif distance_au <= 0.5:
+            estimated_years = 20
+        elif distance_au <= 1.0:
+            estimated_years = 50
+        else:
+            estimated_years = 100
+        
+        if estimated_years <= years:
+            if distance_au <= 0.01:
+                threat = "CRITICAL"
+                priority = 1
+            elif distance_au <= 0.05:
+                threat = "HIGH"
+                priority = 2
+            elif distance_au <= 0.1:
+                threat = "MEDIUM"
+                priority = 3
+            else:
+                threat = "LOW"
+                priority = 4
+            
+            threat_data = {
+                'id': int(asteroid['id']),
+                'name': str(asteroid['name']),
+                'diameter_avg': round(float(asteroid['diameter_avg']), 4),
+                'velocity_km_s': round(float(asteroid['velocity_km_s']), 4),
+                'energy_megatons_TNT': round(float(asteroid['energy_megatons_TNT']), 4),
+                'distance_au': round(distance_au, 6),
+                'estimated_impact_year': 2024 + estimated_years,
+                'years_until_potential_impact': estimated_years,
+                'threat_category': {'level': threat, 'priority': priority}
+            }
+            
+            if threat_level == "ALL" or threat == threat_level:
+                predicted_threats.append(threat_data)
+    
+    predicted_threats.sort(key=lambda x: (x['threat_category']['priority'], x['years_until_potential_impact']))
+    
+    threat_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    for t in predicted_threats:
+        threat_counts[t['threat_category']['level']] += 1
+    
+    return {
+        "timeframe_years": years,
+        "total_predicted_threats": len(predicted_threats),
+        "threat_breakdown": {"threat_distribution": threat_counts},
+        "predicted_impacts": predicted_threats
+    }
+    
+   
 @app.get("/asteroids/threats/immediate")
 async def get_immediate_threats():
     """Get asteroids with immediate threat (within 0.01 AU)"""
@@ -1425,6 +1496,8 @@ async def get_immediate_threats():
         "threat_level": "CRITICAL" if immediate_threats else "LOW",
         "threats": immediate_threats
     }
+
+    
 @app.get("/asteroids/raw")
 async def get_raw_data(
     limit: Optional[int] = Query(None, description="Limit number of results"),
@@ -2310,6 +2383,197 @@ async def get_impact_location_suggestions():
             {"name": "Himalayan Mountains", "lat": 28, "lng": 87}
         ]
     }
+
+    # ترتيب حسب مستوى التهديد ثم الوقت المتوقع
+    predicted_threats.sort(key=lambda x: (
+        x['threat_category']['priority'],
+        x['years_until_potential_impact']
+    ))
+    
+    return {
+        "timeframe_years": years,
+        "threat_level_filter": threat_level,
+        "total_predicted_threats": len(predicted_threats),
+        "threat_breakdown": analyze_threat_breakdown(predicted_threats),
+        "predicted_impacts": predicted_threats
+    }
+def calculate_time_to_impact(distance_km, velocity_km_s, max_years):
+    """
+    حساب الوقت المتوقع للوصول إلى الأرض
+    """
+    distance_au = distance_km / 149597870.7  # التحويل للوحدة الفلكية
+    
+    # حساب الوقت بناءً على المسافة والسرعة (تبسيط)
+    if distance_au <= 0.1:  # قريب جداً
+        years = distance_au * 10 
+    elif distance_au <= 1.0:
+        years = distance_au * 5  
+    else:
+        years = distance_au * 2   
+    
+    will_reach = years <= max_years
+    
+    return {
+        'years_until_impact': max(0.1, years),
+        'will_reach_in_timeframe': will_reach,
+        'estimated_year': 2024 + int(years),
+        'confidence': 'HIGH' if distance_au < 0.1 else 'MEDIUM' if distance_au < 0.5 else 'LOW'
+    }
+
+def calculate_time_to_impact(distance_km, velocity_km_s, max_years):
+    """
+    حساب الوقت المتوقع للوصول إلى الأرض
+    """
+    try:
+        # التحويل للوحدة الفلكية
+        distance_au = distance_km / 149597870.7
+        
+        # حساب الوقت بناءً على المسافة والسرعة (نموذج مبسط)
+        if distance_au <= 0.05:  # قريب جداً
+            years = distance_au * 20  # ~1 سنة لكل 0.05 AU
+        elif distance_au <= 0.5:
+            years = distance_au * 10   # ~5 سنوات لكل 0.5 AU
+        elif distance_au <= 1.0:
+            years = distance_au * 5    # ~5 سنوات لكل AU
+        else:
+            years = distance_au * 2    # ~2 سنة لكل AU للمسافات البعيدة
+        
+        will_reach = years <= max_years
+        
+        return {
+            'years_until_impact': max(0.1, round(years, 2)),
+            'will_reach_in_timeframe': will_reach,
+            'estimated_year': 2024 + int(years),
+            'confidence': 'HIGH' if distance_au < 0.1 else 'MEDIUM' if distance_au < 0.5 else 'LOW'
+        }
+    except Exception as e:
+        return {
+            'years_until_impact': 100,  # قيمة افتراضية آمنة
+            'will_reach_in_timeframe': False,
+            'estimated_year': 2124,
+            'confidence': 'LOW'
+        }
+
+def classify_long_term_threat(diameter, energy, years_until_impact):
+    """
+    تصنيف التهديد على المدى الطويل
+    """
+    try:
+        # عامل الوقت - تهديدات أقرب تكون أكثر خطورة
+        time_factor = max(0, 1 - (years_until_impact / 50))
+        
+        # عامل الحجم
+        size_factor = min(1, diameter / 1000)
+        
+        # عامل الطاقة
+        energy_factor = min(1, energy / 10000)
+        
+        # حساب درجة الخطورة
+        threat_score = (time_factor * 0.4) + (size_factor * 0.3) + (energy_factor * 0.3)
+        
+        if threat_score > 0.7:
+            level = "CRITICAL"
+            priority = 1
+        elif threat_score > 0.5:
+            level = "HIGH"
+            priority = 2
+        elif threat_score > 0.3:
+            level = "MEDIUM" 
+            priority = 3
+        elif threat_score > 0.1:
+            level = "LOW"
+            priority = 4
+        else:
+            level = "MINIMAL"
+            priority = 5
+        
+        return {
+            'level': level,
+            'score': round(threat_score, 3),
+            'priority': priority,
+            'factors': {
+                'time_urgency': round(time_factor, 3),
+                'size_danger': round(size_factor, 3),
+                'energy_risk': round(energy_factor, 3)
+            }
+        }
+    except Exception as e:
+        return {
+            'level': "LOW",
+            'score': 0.1,
+            'priority': 4,
+            'factors': {'time_urgency': 0.1, 'size_danger': 0.1, 'energy_risk': 0.1}
+        }
+
+def analyze_threat_breakdown(threats):
+    """
+    تحليل توزيع التهديدات
+    """
+    try:
+        threat_levels = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "MINIMAL"]
+        breakdown = {level: 0 for level in threat_levels}
+        
+        total_energy = 0
+        avg_diameter = 0
+        closest_approach = float('inf')
+        
+        for threat in threats:
+            level = threat['threat_category']['level']
+            if level in breakdown:
+                breakdown[level] += 1
+            
+            total_energy += threat['energy_megatons_TNT']
+            avg_diameter += threat['diameter_avg']
+            closest_approach = min(closest_approach, threat['years_until_potential_impact'])
+        
+        total_threats = len(threats)
+        if total_threats > 0:
+            avg_diameter = avg_diameter / total_threats
+            avg_energy = total_energy / total_threats
+        else:
+            avg_diameter = 0
+            avg_energy = 0
+            closest_approach = 0
+        
+        return {
+            'threat_distribution': breakdown,
+            'statistics': {
+                'total_energy_megatons': round(total_energy, 2),
+                'average_diameter_km': round(avg_diameter, 2),
+                'average_energy_megatons': round(avg_energy, 2),
+                'closest_approach_years': round(closest_approach, 1),
+                'most_common_threat_level': max(breakdown.items(), key=lambda x: x[1])[0] if total_threats > 0 else "NONE"
+            },
+            'risk_assessment': assess_collective_risk(threats)
+        }
+    except Exception as e:
+        return {
+            'threat_distribution': {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "MINIMAL": 0},
+            'statistics': {'total_energy_megatons': 0, 'average_diameter_km': 0, 'average_energy_megatons': 0, 'closest_approach_years': 0},
+            'risk_assessment': 'LOW'
+        }
+
+def assess_collective_risk(threats):
+    """
+    تقييم الخطورة الجماعية للتهديدات
+    """
+    if not threats:
+        return "LOW"
+    
+    critical_count = sum(1 for t in threats if t['threat_category']['level'] == 'CRITICAL')
+    high_count = sum(1 for t in threats if t['threat_category']['level'] == 'HIGH')
+    total_energy = sum(t['energy_megatons_TNT'] for t in threats)
+    
+    if critical_count >= 3 or total_energy > 1000:
+        return "EXTREME"
+    elif critical_count >= 1 or high_count >= 5 or total_energy > 500:
+        return "VERY_HIGH"
+    elif high_count >= 2 or total_energy > 100:
+        return "HIGH"
+    elif high_count >= 1 or total_energy > 50:
+        return "MEDIUM"
+    else:
+        return "LOW"
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=Config.HOST, port=Config.PORT)

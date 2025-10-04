@@ -1,0 +1,170 @@
+# =============================
+# PYTHON
+# =============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# =============================
+# VIRTUAL ENVIRONMENTS
+# =============================
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# =============================
+# IDE & EDITOR FILES
+# =============================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# =============================
+# DATA & CONFIGURATION FILES
+# =============================
+# بيانات الكويكبات المحملة
+data/neo_data.csv
+data/processed/
+data/raw/
+data/temp/
+
+# ملفات التكوين المحلية
+config/local.py
+*.local.yaml
+*.local.yml
+*.local.json
+.env.local
+.env.production
+
+# API Keys والبيانات الحساسة
+*.key
+*.pem
+*.crt
+secrets.py
+credentials.json
+nasa_api_key.txt
+
+# =============================
+# LOGS & CACHE
+# =============================
+# سجلات التطبيق
+logs/
+*.log
+logs.txt
+
+# ملفات الكاش
+.cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# =============================
+# DATABASES
+# =============================
+# قواعد البيانات المحلية
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# =============================
+# STATIC FILES (التطوير)
+# =============================
+# الملفات الثابتة المُنشأة
+staticfiles/
+media/
+
+# =============================
+# PACKAGING & DEPLOYMENT
+# =============================
+# حزم التوزيع
+*.tar.gz
+*.whl
+
+# Docker
+Dockerfile.dev
+docker-compose.override.yml
+
+# =============================
+# OPERATING SYSTEM
+# =============================
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# =============================
+# TESTING & TEMPORARY FILES
+# =============================
+# ملفات الاختبار المؤقتة
+test_output/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# =============================
+# DOCUMENTATION
+# =============================
+# التوثيق المُنشأ
+docs/_build/
+site/

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beyond Us</title>
+    <link rel="stylesheet" href="galaxy-background.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+      body {
+    margin: 0;
+    overflow-x: hidden;
+    font-family: Jura, sans-serif;
+    color: #fff;
+    margin-left: 10%;  /* أضف هذا */
+    margin-right: 10%; /* أضف هذا */
+}
+      spline-viewer {
+        position: fixed;
+        top: 50%; /* نبدأ من النص */
+        left: 50%;
+        transform: translate(-50%, 0); /* في البداية نصها تحت */
+        width: 100%;
+        height: 100vh;
+        z-index: 1;
+        pointer-events: none;
+        transition: all 0.3s ease-out;
+      }
+
+      .content {
+        position: relative;
+        padding: 20px;
+      }
+
+      #title {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(224, 227, 236);
+      }
+
+      .t1 {
+        height: 50vh;
+        background-color: transparent; /* خليناها شفافة عشان نشوف الكرة */
+        padding: 40px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+      }
+      .t2 {
+        height: 20vh;
+      }
+
+      .t1:first-child {
+        background-color: transparent; /* أول قسم شفاف */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-top: 60px;
+      }
+
+      .t1:not(:first-child) {
+      }
+
+      .t1 h1 {
+        font-size: 2.5rem;
+      }
+
+      .t1 p {
+        font-size: 1.2rem;
+      }
+
+      span {
+        font-weight: bold;
+        font-size: 1.5rem;
+      }
+
+      /*start navbar*/
+
+      .navbar {
+        position: fixed;
+        top: 20px; /* البعد عن التوب - غيرو حسب ما بدك */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%; /* عرض النافبار */
+        max-width: 1200px;
+        z-index: 1000;
+        padding: 15px 30px;
+
+        /* Glass effect */
+        background: rgba(255, 255, 255, 0.055);
+       
+        -webkit-backdrop-filter: blur(10px);
+         backdrop-filter: blur(10px);
+
+        /* حواف دائرية */
+        border-radius: 50px;
+
+        /* Shadow */
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .navbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .navbar-logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .navbar-menu {
+        display: flex;
+        list-style: none;
+        gap: 30px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .navbar-menu li a {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        padding: 8px 16px;
+        border-radius: 10px;
+      }
+
+      .navbar-menu li a:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+
+      .about {
+        width: 50%;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .navbar {
+          width: 95%;
+          padding: 12px 20px;
+        }
+
+        .navbar-menu {
+          gap: 15px;
+        }
+
+        .navbar-menu li a {
+          font-size: 0.9rem;
+        }
+      }
+      /*end navbar*/
+
+
+.cont {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.asteroid-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+  max-width: 400px; /* زدت العرض شوي */
+  width: 100%;
+  margin-bottom: 200px;
+}
+
+/* Select Wrapper */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: '▼';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+/* Glass Select */
+.glass-select {
+  width: 100%;
+  padding: 12px 40px 12px 18px;
+  
+  /* Glass effect */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  /* Styling */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  
+  /* Remove default arrow */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  transition: all 0.3s ease;
+}
+
+.glass-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.glass-select:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(100, 150, 255, 0.5);
+  box-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+}
+
+.glass-select option {
+  background: rgba(10, 10, 30, 0.95);
+  color: #fff;
+  padding: 10px;
+}
+
+/* Glass Button */
+.glass-button {
+  width: 100%;
+  padding: 12px 24px;
+  
+  /* Glass effect */
+  background: rgba(100, 150, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  /* Styling */
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(100, 150, 255, 0.35);
+  border-color: rgba(100, 150, 255, 0.5);
+  box-shadow: 0 8px 25px rgba(100, 150, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+    </style>
+  </head>
+  <body>
+    <script
+      type="module"
+      src="https://unpkg.com/@splinetool/viewer@1.10.74/build/spline-viewer.js"
+    ></script>
+    <spline-viewer
+      url="https://prod.spline.design/2YEIqHFlu4QIt6XS/scene.splinecode"
+      background="transparent"
+    ></spline-viewer>
+
+    <!-- Galaxy Background -->
+    <div class="galaxy-bg">
+      <div class="nebula"></div>
+      <div class="stars-tiny"></div>
+      <div class="stars-small"></div>
+      <div class="stars-medium"></div>
+      <div class="stars-large"></div>
+      <div class="stars-xlarge"></div>
+      <div class="stars-blue"></div>
+      <div class="stars-yellow"></div>
+      <div class="stars-corner-topleft"></div>
+      <div class="stars-corner-topright"></div>
+      <div class="stars-corner-bottomleft"></div>
+      <div class="stars-corner-bottomright"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star-2"></div>
+      <div class="shooting-star-3"></div>
+    </div>
+
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="navbar-logo">Beyond Us</div>
+        <ul class="navbar-menu">
+          <li><a href="#about">About</a></li>
+          <li><a href="#discover">Discover</a></li>
+          <li><a href="#try">Try</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="content">
+      <div class="t1" id="title">
+        <h1>
+          Discover Potential Asteroid Impacts <br />
+          See the Risk, Test Solutions
+        </h1>
+      </div>
+      <div class="t1 t2"></div>
+      <div class="t1 about">
+        <p>
+          Explore asteroids that could potentially strike Earth. Visualize
+          their orbits in 3D, estimate impact effects, and run simple
+          simulations to see regional disasters and possible mitigation options.
+        </p>
+        <p>
+          <span>Note</span> <br> on Asteroid Models: Most asteroid representations on this site
+          are illustrative or approximate, rather than exact, due to limited
+          real images and data. Models are designed to give a visual sense of
+          shape, size, and possible surface features, but may not perfectly
+          reflect the actual asteroid.
+        </p>
+      </div>
+      <div class="t1 cont">
+  <p><span>Discover which asteroids might reach Earth within a chosen timeframe</span></p>
+  
+  <div class="asteroid-selector">
+    <div class="select-wrapper">
+      <select class="glass-select" id="timeframe">
+        <option value="">Select Timeframe</option>
+        <option value="7">Next 1 year</option>
+        <option value="30">Next 5 years</option>
+        <option value="90">Next 10 years</option>
+        <option value="365">Next 20 years</option>
+        <option value="custom">Next 50 years</option>
+        <option value="custom">Next 100 years</option>
+
+      </select>
+    </div>
+    
+    <button class="glass-button">
+      Search
+    </button>
+  </div>
+</div>
+      <div class="t2">
+      </div>
+    </div>
+
+    <script>
+      const splineViewer = document.querySelector("spline-viewer");
+      let currentRotationX = 0;
+      let currentRotationY = 0;
+      let targetRotationX = 0;
+      let targetRotationY = 0;
+
+      // Function to handle scroll and update model
+      function handleScroll() {
+        const scrollY = window.scrollY;
+        const maxScroll =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const scrollPercent = scrollY / maxScroll;
+
+        // حركة الكرة حسب السكرول
+        let translateX = 0;
+        let translateY = 0;
+        let scale = 1.5;
+        let rotateZ = 0; // دوران الـ viewer نفسه
+
+        if (scrollPercent < 0.5) {
+          // أول نص الموقع: الكرة بتصغر وبتروح لليمين
+          const progress = scrollPercent * 2; // 0 to 1 في أول نص
+
+          translateX = progress * 300; // تتحرك 300px لليمين
+          translateY = progress * -100; // تطلع شوي لفوق
+          scale = 1.5 - progress * 0.8; // تصغر من 1.5 لـ 0.7
+          rotateZ = progress * 180; // تلف 180 درجة
+
+          targetRotationY = progress * 360; // تلف المجسم نفسه
+        } else {
+          // ثاني نص الموقع: الكرة بترجع للنص
+          const progress = (scrollPercent - 0.5) * 2; // 0 to 1 في ثاني نص
+
+          // من اليمين للنص
+          translateX = 300 - progress * 300; // ترجع من 300 لـ 0
+          translateY = -100 + progress * 100; // ترجع للنص
+          scale = 0.7 + progress * 0.8; // تكبر من 0.7 لـ 1.5
+          rotateZ = 180 + progress * 180; // تكمل لف لـ 360 درجة
+
+          targetRotationY = 360 + progress * 360; // تكمل لف
+        }
+
+        targetRotationX = scrollPercent * 180;
+
+        // تطبيق التحويلات مع الدوران
+        splineViewer.style.transform = `
+translate(calc(-50% + ${translateX}px), ${translateY}px) 
+scale(${scale})
+rotate(${rotateZ}deg)
+`;
+      }
+
+      // دالة لتحديث الدوران بشكل سلس
+      function updateRotation() {
+        // تحريك الدوران بشكل سلس نحو الهدف
+        currentRotationX += (targetRotationX - currentRotationX) * 0.1;
+        currentRotationY += (targetRotationY - currentRotationY) * 0.1;
+
+        // إرسال حدث الدوران للـ Spline
+        try {
+          splineViewer.emitEvent("mouseMove", {
+            x: currentRotationX,
+            y: currentRotationY,
+          });
+        } catch (e) {
+          // في حال لم يعمل emitEvent
+          console.log("Rotation applied via CSS transform");
+        }
+
+        requestAnimationFrame(updateRotation);
+      }
+
+      // بدء حلقة التحديث
+      updateRotation();
+
+      // إضافة مستمع السكرول
+      window.addEventListener("scroll", handleScroll);
+
+      // تفعيل عند التحميل
+      window.addEventListener("load", () => {
+        handleScroll();
+      });
+    </script>
+  </body>
+</html>

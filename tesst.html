@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام الدفاع الكوكبي - محاكاة حقيقية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a2a, #1a1a4a);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+        
+        .simulation-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        #space-map {
+            width: 100%;
+            height: 600px;
+            background: linear-gradient(180deg, #000428, #004e92);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 78, 146, 0.3);
+            border: 2px solid #4fc3f7;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #4fc3f7;
+            padding-bottom: 5px;
+        }
+        
+        .defense-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .success { background: linear-gradient(45deg, #00c853, #64dd17); }
+        .partial { background: linear-gradient(45deg, #ff9100, #ffd600); color: black; }
+        .failed { background: linear-gradient(45deg, #ff1744, #f50057); }
+        .destroy { background: linear-gradient(45deg, #2979ff, #2962ff); }
+        .reset { background: linear-gradient(45deg, #757575, #9e9e9e); }
+        .auto { background: linear-gradient(45deg, #aa00ff, #e040fb); }
+        
+        .defense-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .status-panel {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        
+        /* عناصر المحاكاة */
+        .earth {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #1a237e, #4fc3f7);
+            border-radius: 50%;
+            bottom: 50px;
+            right: 100px;
+            box-shadow: 
+                0 0 60px rgba(79, 195, 247, 0.8),
+                inset 0 0 50px rgba(255, 255, 255, 0.3);
+            border: 3px solid #b3e5fc;
+            z-index: 5;
+        }
+        
+        .asteroid {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #795548, #8d6e63);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(141, 110, 99, 0.7);
+            z-index: 10;
+            transition: left 0.1s linear, top 0.1s linear;
+        }
+        
+        .trajectory {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+            transform-origin: left center;
+            z-index: 4;
+        }
+        
+        .impact-point {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            z-index: 8;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .fragments {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(45deg, #ff9800, #ff5722);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 87, 34, 0.7);
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 40% 70%, white, transparent),
+                radial-gradient(2px 2px at 60% 20%, white, transparent),
+                radial-gradient(2px 2px at 80% 50%, white, transparent),
+                radial-gradient(2px 2px at 30% 80%, white, transparent);
+            background-repeat: repeat;
+            animation: twinkle 4s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ff9800, #ff5722, transparent 70%);
+            border-radius: 50%;
+            animation: explode 0.5s ease-out;
+            z-index: 20;
+        }
+        
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        
+        .info-box {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #4fc3f7;
+            color: white;
+            font-size: 12px;
+            max-width: 200px;
+            z-index: 100;
+        }
+        
+        .distance-line {
+            position: absolute;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 3;
+        }
+        
+        .distance-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 نظام الدفاع الكوكبي - محاكاة حية</h1>
+            <p class="subtitle">تتبع حي لحركة الكويكب نحو الأرض - الوقت الحقيقي</p>
+        </header>
+        
+        <div class="simulation-container">
+            <div id="space-map">
+                <div class="stars"></div>
+                <!-- العناصر تضاف هنا عبر JavaScript -->
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>⏰ العد التنازلي</h3>
+                    <div class="timer" id="countdown">--:--</div>
+                    <div class="status-item">
+                        <span>المسافة المتبقية:</span>
+                        <span id="distance-left">-- كم</span>
+                    </div>
+                    <div class="status-item">
+                        <span>السرعة:</span>
+                        <span id="current-speed">-- كم/ث</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🛡️ أنظمة الدفاع</h3>
+                    <button class="defense-btn auto" onclick="startAutoMovement()">
+                        🚀 بدء الحركة التلقائية
+                    </button>
+                    <button class="defense-btn success" onclick="activateDefense('success')">
+                        ✅ دفاع ناجح - تغيير المسار
+                    </button>
+                    <button class="defense-btn partial" onclick="activateDefense('partial')">
+                        ⚠️ دفاع جزئي - تخفيف الضرر
+                    </button>
+                    <button class="defense-btn destroy" onclick="activateDefense('destroy')">
+                        💥 تدمير الكويكب
+                    </button>
+                    <button class="defense-btn reset" onclick="resetSimulation()">
+                        🔄 إعادة المحاكاة
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>📊 حالة المهمة</h3>
+                    <div class="status-panel">
+                        <div class="status-item">
+                            <span>الحالة:</span>
+                            <span id="mission-status">في انتظار البدء</span>
+                        </div>
+                        <div class="status-item">
+                            <span>نقطة الاصطدام:</span>
+                            <span id="impact-point">--</span>
+                        </div>
+                        <div class="status-item">
+                            <span>مستوى الخطورة:</span>
+                            <span id="danger-level">--</span>
+                        </div>
+                        <div class="status-item">
+                            <span>الوقت المتبقي:</span>
+                            <span id="time-left">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const spaceMap = document.getElementById('space-map');
+        let asteroidInterval;
+        let currentPosition = { x: 50, y: 150 };
+        let isMoving = false;
+        let timeLeft = 30; // ثانية - محاكاة لـ 30 يوم
+
+        // إنشاء الأرض والكويكب الأولي
+        function initializeSimulation() {
+            // إضافة الأرض
+            const earth = document.createElement('div');
+            earth.className = 'earth';
+            earth.id = 'earth';
+            spaceMap.appendChild(earth);
+
+            // إضافة الكويكب
+            const asteroid = document.createElement('div');
+            asteroid.className = 'asteroid';
+            asteroid.id = 'asteroid';
+            asteroid.style.left = currentPosition.x + 'px';
+            asteroid.style.top = currentPosition.y + 'px';
+            spaceMap.appendChild(asteroid);
+
+            // إضافة المسار
+            const trajectory = document.createElement('div');
+            trajectory.className = 'trajectory';
+            trajectory.id = 'trajectory';
+            updateTrajectory();
+            spaceMap.appendChild(trajectory);
+
+            updateStatus('في انتظار البدء', '--', '--', '--');
+            updateCountdown();
+        }
+
+        // بدء الحركة التلقائية
+        function startAutoMovement() {
+            if (isMoving) return;
+            
+            isMoving = true;
+            updateStatus('تحرك الكويكب', 'تصادمي', 'عالية', '30 يوم');
+            
+            asteroidInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    impact();
+                    return;
+                }
+                
+                timeLeft--;
+                currentPosition.x += 20;
+                currentPosition.y += 3;
+                
+                updateAsteroidPosition();
+                updateTrajectory();
+                updateCountdown();
+                updateDistance();
+                
+            }, 100); // تحديث كل 100 مللي ثانية
+        }
+
+        // تحديث موقع الكويكب
+        function updateAsteroidPosition() {
+            const asteroid = document.getElementById('asteroid');
+            if (asteroid) {
+                asteroid.style.left = currentPosition.x + 'px';
+                asteroid.style.top = currentPosition.y + 'px';
+                
+                // تأثير الاهتزاز مع الاقتراب
+                if (timeLeft < 10) {
+                    asteroid.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+                }
+            }
+        }
+
+        // تحديث المسار
+        function updateTrajectory() {
+            const trajectory = document.getElementById('trajectory');
+            if (trajectory) {
+                const earthX = 800, earthY = 450;
+                const dx = earthX - currentPosition.x;
+                const dy = earthY - currentPosition.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                trajectory.style.left = currentPosition.x + 'px';
+                trajectory.style.top = currentPosition.y + 'px';
+                trajectory.style.width = distance + 'px';
+                trajectory.style.transform = `rotate(${angle}deg)`;
+            }
+        }
+
+        // تحديث العد التنازلي
+        function updateCountdown() {
+            const days = Math.floor(timeLeft / 3);
+            const hours = (timeLeft % 3) * 8;
+            document.getElementById('countdown').textContent = 
+                `${days} يوم ${hours} ساعة`;
+            document.getElementById('time-left').textContent = 
+                `${days} يوم ${hours} ساعة`;
+        }
+
+        // تحديث المسافة
+        function updateDistance() {
+            const earthX = 800, earthY = 450;
+            const dx = earthX - currentPosition.x;
+            const dy = earthY - currentPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const realDistance = Math.max(0, (distance / 750) * 400000).toFixed(0); // محاكاة لـ 400,000 كم
+            
+            document.getElementById('distance-left').textContent = 
+                `${realDistance} ألف كم`;
+            
+            // تحديث السرعة (تزيد مع الاقتراب)
+            const speed = 16 + (30 - timeLeft) * 0.5;
+            document.getElementById('current-speed').textContent = 
+                `${speed.toFixed(1)} كم/ث`;
+        }
+
+        // تفعيل الدفاع
+        function activateDefense(type) {
+            if (!isMoving) return;
+            
+            clearInterval(asteroidInterval);
+            isMoving = false;
+            
+            let status, danger, energy;
+            
+            switch(type) {
+                case 'success':
+                    // تغيير المسار بنجاح
+                    currentPosition.y -= 100;
+                    status = 'ناجح - تم تغيير المسار';
+                    danger = 'منخفضة';
+                    energy = '0 ميجاطن';
+                    break;
+                    
+                case 'partial':
+                    // تخفيف الضرر
+                    currentPosition.x += 50;
+                    status = 'جزئي - ضرر محدود';
+                    danger = 'متوسطة';
+                    energy = '0.08 ميجاطن';
+                    createExplosion(currentPosition.x, currentPosition.y);
+                    break;
+                    
+                case 'destroy':
+                    // تدمير الكويكب
+                    status = 'ناجح - تم تدمير الكويكب';
+                    danger = 'منعدمة';
+                    energy = '0.01 ميجاطن';
+                    createFragments();
+                    document.getElementById('asteroid').style.display = 'none';
+                    break;
+            }
+            
+            updateAsteroidPosition();
+            updateTrajectory();
+            updateStatus(status, 'تم تجنب الاصطدام', danger, energy);
+        }
+
+        // اصطدام
+        function impact() {
+            clearInterval(asteroidInterval);
+            createExplosion(currentPosition.x, currentPosition.y);
+            updateStatus('اصطدام مباشر', 'منطقة مأهولة', 'كارثية', '0.24 ميجاطن');
+            document.getElementById('asteroid').style.display = 'none';
+        }
+
+        // إنشاء انفجار
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - 50) + 'px';
+            explosion.style.top = (y - 50) + 'px';
+            spaceMap.appendChild(explosion);
+
+            setTimeout(() => explosion.remove(), 500);
+        }
+
+        // إنشاء شظايا
+        function createFragments() {
+            for(let i = 0; i < 15; i++) {
+                const fragment = document.createElement('div');
+                fragment.className = 'fragments';
+                fragment.style.left = (currentPosition.x + Math.random() * 100 - 50) + 'px';
+                fragment.style.top = (currentPosition.y + Math.random() * 100 - 50) + 'px';
+                spaceMap.appendChild(fragment);
+            }
+        }
+
+        // تحديث الحالة
+        function updateStatus(status, impact, danger, energy) {
+            document.getElementById('mission-status').textContent = status;
+            document.getElementById('impact-point').textContent = impact;
+            document.getElementById('danger-level').textContent = danger;
+        }
+
+        // إعادة التعيين
+        function resetSimulation() {
+            clearInterval(asteroidInterval);
+            isMoving = false;
+            currentPosition = { x: 50, y: 150 };
+            timeLeft = 30;
+            
+            document.querySelectorAll('#asteroid, #trajectory, .fragments, .explosion').forEach(el => el.remove());
+            initializeSimulation();
+        }
+
+        // التهيئة الأولية
+        initializeSimulation();
+    </script>
+</body>
+</html>

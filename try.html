@@ -103,18 +103,20 @@
         }
 
         .simulator-layout {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 20px;
-            height: 80vh;
-        }
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 20px;
+    min-height: 80vh; /* غيّرت من height لـ min-height */
+    margin-bottom: 30px; /* عشان يكون في مسافة قبل Results Panel */
+}
 
-        @media (max-width: 1024px) {
-            .simulator-layout {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr;
-            }
-        }
+    @media (max-width: 1024px) {
+    .simulator-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        min-height: 60vh;
+    }
+}
 
         .control-panel {
             background: rgba(255, 255, 255, 0.1);
@@ -282,14 +284,17 @@
         }
 
         .results-panel {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-top: 20px;
-            display: none;
-        }
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 30px; /* مسافة من اللي فوق */
+    margin-bottom: 50px; /* مسافة من تحت */
+    display: none;
+    position: relative; /* مهم! عشان ما يطلع overlay */
+    z-index: 1; /* تحت كل شي */
+}
 
         .results-panel.active {
             display: block;
@@ -456,9 +461,9 @@
         <div class="navbar-content">
             <div class="navbar-logo">Beyond Us</div>
             <ul class="navbar-menu">
-                <li><a href="asteroids.html">About</a></li>
-                <li><a href="#about">Discover</a></li>
-                <li><a href="try.html" >Try</a></li>
+               <li><a href="index.html">About</a></li>
+          <li><a href="asteroids.html">Discover</a></li>
+         <li><a href="try.html" >Try</a></li>
             </ul>
         </div>
     </nav>
@@ -958,5 +963,6 @@
             return classes[riskLevel] || 'risk-medium';
         }
     </script>
+    <script src="api-integration.js"></script>
 </body>
 </html>

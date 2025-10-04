@@ -307,9 +307,9 @@
       <div class="navbar-content">
         <div class="navbar-logo">Beyond Us</div>
         <ul class="navbar-menu">
-          <li><a href="#about">About</a></li>
-          <li><a href="#discover">Discover</a></li>
-          <li><a href="#try">Try</a></li>
+       <li><a href="index.html">About</a></li>
+          <li><a href="asteroids.html">Discover</a></li>
+         <li><a href="try.html" >Try</a></li>
         </ul>
       </div>
     </nav>
@@ -326,57 +326,24 @@
     </div>
 
     <script>
-      // بيانات الكويكبات مع الصور
-      const asteroidsData = [
-        { 
-          id: 1, 
-          name: "2025-AB3", 
-          image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=400&fit=crop&crop=center",
-          timeframe: [1, 5, 10, 15, 50, 100]
-        },
-        { 
-          id: 2, 
-          name: "2025-CD4", 
-          image: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&h=400&fit=crop&crop=center",
-          timeframe: [1, 5, 10, 15, 50, 100]
-        },
-        { 
-          id: 3, 
-          name: "2025-EF5", 
-          image: "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=400&h=400&fit=crop&crop=center",
-          timeframe: [1, 5, 10, 15, 50, 100]
-        },
-        { 
-          id: 4, 
-          name: "2025-GH6", 
-          image: "https://images.unsplash.com/photo-1502136969935-8d8eef54d77b?w=400&h=400&fit=crop&crop=center",
-          timeframe: [5, 10, 15, 50, 100]
-        },
-        { 
-          id: 5, 
-          name: "2025-IJ7", 
-          image: "https://images.unsplash.com/photo-1462332420958-a05d1e002413?w=400&h=400&fit=crop&crop=center",
-          timeframe: [1, 5, 10, 15, 50, 100]
-        },
-        { 
-          id: 6, 
-          name: "2026-KL8", 
-          image: "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=400&h=400&fit=crop&crop=center",
-          timeframe: [10, 15, 50, 100]
-        },
-        { 
-          id: 7, 
-          name: "2026-MN9", 
-          image: "https://images.unsplash.com/photo-1630142771937-86e30961baca?w=400&h=400&fit=crop&crop=center",
-          timeframe: [15, 50, 100]
-        },
-        { 
-          id: 8, 
-          name: "2027-OP1", 
-          image: "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=400&fit=crop&crop=center",
-          timeframe: [15, 50, 100]
+      // Fetch asteroids data from API
+      let asteroidsData = [];
+
+      async function fetchAsteroidsData() {
+        try {
+          const response = await fetch('http://localhost:8000/asteroids/raw');
+          const data = await response.json();
+          asteroidsData = data.map(asteroid => ({
+            id: asteroid.id,
+            name: asteroid.name,
+            image: asteroid.image || "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=400&fit=crop&crop=center", // fallback image
+            timeframe: [1, 5, 10, 15, 50, 100] // assuming all timeframes for now
+          }));
+          updateAsteroidsDisplay(currentDuration);
+        } catch (error) {
+          console.error('Error fetching asteroids data:', error);
         }
-      ];
+      }
 
       // عناصر DOM
       const asteroidsGrid = document.getElementById('asteroids-grid');
@@ -394,7 +361,8 @@
           currentDuration = parseInt(timeframe);
         }
         
-        updateAsteroidsDisplay(currentDuration);
+        // Fetch data from API when page loads
+        fetchAsteroidsData();
       });
 
       // دالة تحديث عرض الكويكبات
@@ -452,5 +420,6 @@ function showAsteroidInfo(asteroidName) {
     window.location.href = `details.html?asteroid=${asteroidName}`;
 }
     </script>
+    <script src="api-integration.js"></script>
   </body>
 </html>

@@ -708,9 +708,9 @@
         <div class="navbar-content">
             <div class="navbar-logo">Beyond Us</div>
             <ul class="navbar-menu">
-                <li><a href="asteroids.html">About</a></li>
-                <li><a href="#about">Discover</a></li>
-                <li><a href="#discover">Try</a></li>
+               <li><a href="index.html">About</a></li>
+          <li><a href="asteroids.html">Discover</a></li>
+         <li><a href="try.html" >Try</a></li>
             </ul>
         </div>
     </nav>
@@ -873,26 +873,51 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const asteroidImpactDates = {
-    "2025-AB3": "2028-06-15T18:30:00",
-    "2025-CD4": "2030-09-20T14:45:00", 
-    "2025-EF5": "2026-03-10T09:15:00",
-    "2025-GH6": "2026-11-05T20:00:00",
-    "2025-IJ7": "2027-01-30T16:20:00",
-    "2026-KL8": "2028-07-12T12:10:00",
-    "2026-MN9": "2029-12-25T23:59:00",
-    "2027-OP1": "2030-04-18T08:30:00"
-};
+    // Fetch asteroid data from API
+async function fetchAsteroidDetails(asteroidName) {
+    try {
+        const response = await fetch('http://localhost:8000/asteroids/raw');
+        const data = await response.json();
+        const asteroid = data.find(a => a.name === asteroidName);
+        if (asteroid) {
+            // Update asteroid info
+            document.querySelector('.card-header img').src = asteroid.image || "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=300&h=300&fit=crop";
+            document.querySelector('.asteroid-data-card h2').textContent = asteroid.name;
+            document.querySelector('.asteroid-data-card div').innerHTML = `
+                <div>Size: <span>${asteroid.size || 'Unknown'}</span></div>
+                <div>Speed: <span>${asteroid.speed || 'Unknown'} km/s</span></div>
+                <div>Distance: <span>${asteroid.distance || 'Unknown'} km</span></div>
+            `;
+            
+            return {
+                impactDate: asteroid.impact_date || "2028-06-15T18:30:00" // default date if not provided
+            };
+        }
+        return {
+            impactDate: "2028-06-15T18:30:00" // default date
+        };
+    } catch (error) {
+        console.error('Error fetching asteroid data:', error);
+        return {
+            impactDate: "2028-06-15T18:30:00" // default date
+        };
+    }
+}
    
 
-   // في details.html
+   // Get asteroid name from URL
 const urlParams = new URLSearchParams(window.location.search);
 const asteroidName = urlParams.get('asteroid');
 
-// خذ تاريخ الاصطدام من asteroidImpactDates
-const impactDate = asteroidImpactDates[asteroidName];
+// Initialize with a placeholder date
+let impactDate = "2028-06-15T18:30:00";
 
+// Fetch asteroid details when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    const details = await fetchAsteroidDetails(asteroidName);
+    impactDate = details.impactDate;
 
+});
 
 
 // باقي كود الكاونتداون...
@@ -1085,6 +1110,7 @@ Shockwave Radius: ${asteroidData.atmospheric_hazards.shockwave_radius_km} km
     
 </script>
     <script src="./scripts/s-c2.js"></script>
+    <script src="api-integration.js"></script>
 
 
 </body>

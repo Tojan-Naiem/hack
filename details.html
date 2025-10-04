@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Countdown Timer - Beyond Us</title>
+    <link rel="stylesheet" href="galaxy-background.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            font-family: Jura, sans-serif;
+            color: #fff;
+        }
+
+       
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 1200px;
+            z-index: 9000;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.055);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .navbar-content {
+            
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-menu li a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 10px;
+        }
+
+        .navbar-menu li a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+         .content {
+            position: relative;
+            padding: 20px;
+
+            width: 80%;
+            margin-top: 120px;
+            margin-left:  auto;
+            margin-right:  auto;
+        }
+
+        /* قسم معلومات الكويكب */
+.asteroid-info-section {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+
+    align-items: start;
+    margin-top: 4px;
+}
+
+
+
+.asteroid-large-image {
+     text-align: center;
+    width: 100%;
+    max-width: 500px;
+    height: 00px;
+
+    object-fit: cover;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.asteroid-data-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    width: 60%;
+    border-radius: 20px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 0.2px solid rgba(255, 255, 255, 0.102);
+}
+
+.card-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+
+    
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    color: #4facfe;
+}
+
+
+
+.data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.data-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.data-label {
+    font-size: 0.9rem;
+    color: #a0c8ff;
+    margin-bottom: 5px;
+}
+
+.data-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+ 
+         .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 25px;
+            background: rgba(100, 150, 255, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+         .back-button:hover {
+            background: rgba(100, 150, 255, 0.35);
+            border-color: rgba(100, 150, 255, 0.5);
+            box-shadow: 0 8px 25px rgba(100, 150, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .countdown-container {
+            text-align: center;
+         
+            padding: 40px;
+            
+            
+        }
+
+        .countdown-title {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+
+        }
+
+         .countdown-timer {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+         .countdown-unit {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 5px;
+            border-radius: 20px;
+            min-width: 100px;
+
+            transition: all 0.3s ease;
+        }
+
+
+ 
+
+        .countdown-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+
+            display: block;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.194);
+        }
+
+        .countdown-label {
+            font-size: 1.1rem;
+            color: #c4dafb;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        
+         /* Responsive */
+        @media (max-width: 768px) {
+            .countdown-timer {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .countdown-unit {
+                min-width: 80px;
+                padding: 10px 5px;
+            }
+            
+            .countdown-number {
+                font-size: 2.5rem;
+            }
+            
+            .countdown-title {
+                font-size: 1.5rem;
+            }
+        
+            .navbar {
+                width: 95%;
+                padding: 12px 20px;
+            }
+
+            .navbar-menu {
+                gap: 15px;
+            }
+
+            .navbar-menu li a {
+                font-size: 0.9rem;
+            }
+            
+            .asteroid-name {
+                font-size: 2.2rem;
+            }
+            
+            .countdown-container {
+                padding: 30px 20px;
+            }
+      
+    .asteroid-info-section {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .asteroid-large-image {
+        max-width: 40%;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+}
+
+.simulation-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        #map { 
+            height: 100%; 
+            width: 100%; 
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            width: 250px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-panel h2 {
+            margin: 0 0 15px 0;
+            color: #4facfe;
+            font-size: 1.5rem;
+        }
+
+        .data-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .data-label {
+            color: #a0c8ff;
+            font-size: 0.9rem;
+        }
+
+        .data-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .danger-level {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.5);
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            background: rgba(79, 172, 254, 0.3);
+            border: 1px solid rgba(79, 172, 254, 0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(79, 172, 254, 0.5);
+            transform: translateY(-2px);
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(2px,-2px); }
+            50% { transform: translate(-2px,2px); }
+            75% { transform: translate(2px,2px); }
+            100% { transform: translate(0,0); }
+        }
+
+        .shake-map { 
+            animation: shake 0.5s; 
+        }
+
+        .wave-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(3); }
+        }
+
+      
+    </style>
+</head>
+<body>
+
+
+    <!-- Galaxy Background -->
+    <div class="galaxy-bg">
+        <div class="nebula"></div>
+        <div class="stars-tiny"></div>
+        <div class="stars-small"></div>
+        <div class="stars-medium"></div>
+        <div class="stars-large"></div>
+        <div class="stars-xlarge"></div>
+        <div class="stars-blue"></div>
+        <div class="stars-yellow"></div>
+        <div class="stars-corner-topleft"></div>
+        <div class="stars-corner-topright"></div>
+        <div class="stars-corner-bottomleft"></div>
+        <div class="stars-corner-bottomright"></div>
+        <div class="shooting-star"></div>
+        <div class="shooting-star-2"></div>
+        <div class="shooting-star-3"></div>
+    </div>
+
+
+     <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-logo">Beyond Us</div>
+            <ul class="navbar-menu">
+                <li><a href="asteroids.html">About</a></li>
+                <li><a href="#about">Discover</a></li>
+                <li><a href="#discover">Try</a></li>
+            </ul>
+        </div>
+    </nav>
+
+
+
+
+<div class="content">
+    <!-- قسم بسيط للصورة والبيانات -->
+    <div class="asteroid-info-section" >
+        <!-- الصورة -->
+        <div class="card-header" >
+            <img  src="https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=300&h=300&fit=crop" 
+               alt="asteroid"  />
+        </div>
+        
+        <!-- البيانات -->
+        <div class="asteroid-data-card">
+            <h2 >2025-AB3</h2>
+            <div >
+                <div>Size: <span >500 meters</span></div>
+                <div>Speed: <span >15 km/s</span></div>
+                <div>Distance: <span >1.2M km</span></div>
+            </div>
+        </div>
+    </div>
+
+    
+ 
+
+  <div class="countdown-container">
+    <div class="countdown-title">Estimated Time To  Collision</div>
+    <div class="countdown-timer" id="countdown-timer">
+        <div class="countdown-unit">
+            <span class="countdown-number" id="days">00</span>
+            <span class="countdown-label">Days</span>
+        </div>
+        <div class="countdown-unit">
+            <span class="countdown-number" id="hours">00</span>
+            <span class="countdown-label">Hours</span>
+        </div>
+        <div class="countdown-unit">
+            <span class="countdown-number" id="minutes">00</span>
+            <span class="countdown-label">Minutes</span>
+        </div>
+        <div class="countdown-unit">
+            <span class="countdown-number" id="seconds">00</span>
+            <span class="countdown-label">Seconds</span>
+        </div>
+    </div>
+
+     <div class="simulation-container">
+        <div id="map"></div>
+        
+        <div class="info-panel">
+            <h2>Asteroid Impact Simulation</h2>
+            <div class="data-item">
+                <span class="data-label">Asteroid:</span>
+                <span class="data-value" id="asteroid-name">(2008 SS)</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Energy:</span>
+                <span class="data-value" id="energy">155.07 MT</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Location:</span>
+                <span class="data-value" id="location">40.7128, -74.006</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Estimated Deaths:</span>
+                <span class="data-value" id="deaths">150,000</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Impact Type:</span>
+                <span class="data-value" id="impact-type">Urban</span>
+            </div>
+            <div class="danger-level">HIGH RISK</div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="restartSimulation()">Restart</button>
+            <button class="control-btn" onclick="pauseSimulation()">Pause</button>
+           
+</div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const asteroidImpactDates = {
+    "2025-AB3": "2028-06-15T18:30:00",
+    "2025-CD4": "2030-09-20T14:45:00", 
+    "2025-EF5": "2026-03-10T09:15:00",
+    "2025-GH6": "2026-11-05T20:00:00",
+    "2025-IJ7": "2027-01-30T16:20:00",
+    "2026-KL8": "2028-07-12T12:10:00",
+    "2026-MN9": "2029-12-25T23:59:00",
+    "2027-OP1": "2030-04-18T08:30:00"
+};
+   
+
+   // في details.html
+const urlParams = new URLSearchParams(window.location.search);
+const asteroidName = urlParams.get('asteroid');
+
+// خذ تاريخ الاصطدام من asteroidImpactDates
+const impactDate = asteroidImpactDates[asteroidName];
+
+
+
+
+// باقي كود الكاونتداون...
+
+// استخدم impactDate عشان تعمل الكاونتداون
+const targetDate = new Date(impactDate).getTime();
+
+// باقي كود الكاونتداون...
+
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const timeLeft = targetDate - now;
+
+        
+
+        // حساب الوقت المتبقي للاصطدام
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        // تحديث الـ DOM
+        document.getElementById('days').textContent = days.toString().padStart(2, '0');
+        document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+        document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+    }
+
+    // تشغيل الكاونتداون أول مرة
+    updateCountdown();
+
+    // تحديث الكاونتداون كل ثانية
+    setInterval(updateCountdown, 1000);
+
+
+
+    
+        // ===================== البيانات =====================
+        const asteroidData = {
+            name: "(2008 SS)",
+            energy_megatons: 155.07,
+            impact_lat: 40.7128,
+            impact_lng: -74.006,
+            estimated_deaths: 150000,
+            seismic: { intensity: "VII-IX", radius_km: 500, duration_sec: 45 },
+            tsunami: { tsunami_expected: true, wave_height_m: "10-50", inundation_radius_km: 1000 },
+            atmospheric_hazards: { shockwave_radius_km: 310 }
+        };
+
+        // ===================== إنشاء الخريطة =====================
+        const map = L.map('map').setView([asteroidData.impact_lat, asteroidData.impact_lng], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // ===================== تحديث لوحة المعلومات =====================
+        function updateInfoPanel(data, impactType) {
+            document.getElementById('asteroid-name').textContent = data.name;
+            document.getElementById('energy').textContent = data.energy_megatons + ' MT';
+            document.getElementById('location').textContent = data.impact_lat + ', ' + data.impact_lng;
+            document.getElementById('deaths').textContent = data.estimated_deaths.toLocaleString();
+            document.getElementById('impact-type').textContent = impactType;
+        }
+
+        // ===================== وظائف مساعدة =====================
+        function shakeMap() {
+            const mapDiv = document.getElementById("map");
+            mapDiv.classList.add("shake-map");
+            setTimeout(() => mapDiv.classList.remove("shake-map"), 1000);
+        }
+
+        function createWave(lat, lng, radiusKm, color, className = ''){
+            const circle = L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                radius: radiusKm * 1000,
+                className: className
+            }).addTo(map);
+            
+            setTimeout(() => map.removeLayer(circle), 4000);
+            return circle;
+        }
+
+        // ===================== تحديد نوع الموقع تلقائيًا =====================
+        function getLocationType(lat, lng){
+            // مثال مبسط لتحديد ocean أم land
+            if ((lat >= -60 && lat <= 60) && ((lng <= -60) || (lng >= 20 && lng <= 120))) return 'Ocean';
+            // يمكن تطويره للمدن/ريف حسب OpenStreetMap
+            if ((lat >= 35 && lat <= 45) && (lng >= -80 && lng <= -70)) return 'Urban';
+            return 'Rural';
+        }
+
+        // ===================== محاكاة الاصطدام =====================
+        function simulateImpact(data){
+            const lat = data.impact_lat;
+            const lng = data.impact_lng;
+
+            // حساب النوع تلقائيًا
+            const impactType = getLocationType(lat, lng);
+
+            // تحديث لوحة المعلومات
+            updateInfoPanel(data, impactType);
+
+            // هزة أرضية
+            if(data.seismic?.radius_km){
+                setTimeout(() => {
+                    shakeMap();
+                    createWave(lat, lng, data.seismic.radius_km, 'red', 'wave-animation');
+                }, 1000);
+            }
+
+            // تسونامي
+            if(data.tsunami?.tsunami_expected){
+                setTimeout(() => {
+                    const radius = data.tsunami.inundation_radius_km || 100;
+                    createWave(lat, lng, radius, 'blue', 'wave-animation');
+                }, 2000);
+            }
+
+            // موجة صدمة / انفجار
+            if(data.atmospheric_hazards?.shockwave_radius_km){
+                setTimeout(() => {
+                    createWave(lat, lng, data.atmospheric_hazards.shockwave_radius_km, 'orange', 'wave-animation');
+                }, 1500);
+            }
+
+            // دائرة أساسية لموقع الاصطدام
+            const impactCircle = L.circle([lat, lng], {
+                color: impactType === "Ocean" ? 'blue' : 'red',
+                fillColor: impactType === "Ocean" ? '#00f' : '#f03',
+                fillOpacity: 0.3,
+                radius: 20000
+            }).addTo(map).bindPopup(`
+                <div style="color: #333;">
+                    <b>${data.name}</b><br>
+                    Energy: ${data.energy_megatons} MT<br>
+                    Estimated Deaths: ${data.estimated_deaths.toLocaleString()}<br>
+                    Location: ${impactType}<br>
+                    Threats: 
+                    ${data.tsunami?.tsunami_expected ? '🌊 Tsunami, ' : ''}
+                    ${data.seismic?.radius_km ? '🏔️ Earthquake, ' : ''}
+                    ${data.atmospheric_hazards?.shockwave_radius_km ? '💥 Shockwave' : ''}
+                </div>
+            `);
+
+            // فتح البوب آب تلقائياً
+            setTimeout(() => {
+                impactCircle.openPopup();
+            }, 3000);
+        }
+
+        // ===================== وظائف التحكم =====================
+        function restartSimulation() {
+            map.eachLayer(layer => {
+                if (layer instanceof L.Circle) {
+                    map.removeLayer(layer);
+                }
+            });
+            simulateImpact(asteroidData);
+        }
+
+        function pauseSimulation() {
+            // يمكن إضافة منطق للإيقاف المؤقت
+            alert('Simulation paused');
+        }
+
+        function showDetails() {
+            const details = `
+Energy: ${asteroidData.energy_megatons} megatons
+Seismic Intensity: ${asteroidData.seismic.intensity}
+Tsunami Wave Height: ${asteroidData.tsunami.wave_height_m}
+Shockwave Radius: ${asteroidData.atmospheric_hazards.shockwave_radius_km} km
+            `;
+            alert(details);
+        }
+
+        // ===================== تشغيل المحاكاة =====================
+        simulateImpact(asteroidData);
+
+
+        
+    
+</script>
+
+</body>
+</html>

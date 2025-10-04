@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asteroids</title>
+    <link rel="stylesheet" href="galaxy-background.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        font-family: Jura, sans-serif;
+        color: #fff;
+      }
+
+      .content {
+        position: relative;
+        padding: 20px;
+        width: 80%;
+        margin: 80px auto;
+
+      }
+
+      #title {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(224, 227, 236);
+      }
+
+      /*start navbar*/
+      .navbar {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        max-width: 1200px;
+        z-index: 1000;
+        padding: 15px 30px;
+        background: rgba(255, 255, 255, 0.055);
+        
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border-radius: 50px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .navbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .navbar-logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .navbar-menu {
+        display: flex;
+        list-style: none;
+        gap: 30px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .navbar-menu li a {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        padding: 8px 16px;
+        border-radius: 10px;
+      }
+
+      .navbar-menu li a:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Header */
+     .results-header {
+    text-align: center;
+     margin-top: 120px;
+
+    margin-bottom: 50px;
+
+
+    position: relative; 
+    z-index: 100; 
+}
+
+      .results-header h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: #fff;
+      }
+
+      .timeframe-info {
+        font-size: 24px;
+      }
+
+      /* Asteroid Grid - 4 cards per row */
+      .asteroids-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+        gap: 30px;
+        margin-bottom: 50px;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 20px;
+      }
+
+      .asteroid-card {
+        padding: 25px;
+        text-align: center;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+      }
+
+      .asteroid-card:hover {
+        transform: translateY(-15px);
+      }
+
+      .asteroid-image {
+        width: 220px; /* أكبر حجم */
+        height: 220px; /* أكبر حجم */
+
+        object-fit: cover;
+
+        transition: all 0.4s ease;
+
+      }
+
+      .asteroid-card:hover .asteroid-image {
+        transform: scale(1.1);
+        box-shadow: 0 0 10px rgba(243, 252, 141, 0.6);
+      }
+
+      .asteroid-name {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        position: relative;
+        color: #fff;
+      }
+
+      .asteroid-name::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 1px;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+      }
+
+      .more-info-btn {
+    padding: 8px 20px;
+    background: rgba(29, 92, 148, 0.3);
+    border: 0.5px solid rgba(79, 172, 254, 0.5);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    position: absolute;
+    top: 30%; /* تغيير من 40px إلى 50% */
+    left: 50%;
+    transform: translate(-50%, -50%); /* تغيير مهم */
+    opacity: 0;
+    z-index: 2;
+}
+
+      .asteroid-card:hover .more-info-btn {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-5px);
+      }
+
+      .more-info-btn:hover {
+        background: rgba(8, 56, 98, 0.5);
+        border-color: rgba(79, 172, 254, 0.8);
+        box-shadow: 0 0px 10px rgba(79, 172, 254, 0.4);
+        transform: translateX(-50%) translateY(-5px);
+      }
+
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .asteroids-grid {
+          grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+        }
+      }
+
+      @media (max-width: 900px) {
+        .asteroids-grid {
+          grid-template-columns: repeat(2, 1fr); /* 2 cards on small screens */
+        }
+        
+        .asteroid-image {
+          width: 180px;
+          height: 180px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .navbar {
+          width: 95%;
+          padding: 12px 20px;
+        }
+
+        .navbar-menu {
+          gap: 15px;
+        }
+
+        .navbar-menu li a {
+          font-size: 0.9rem;
+        }
+
+        .asteroids-grid {
+          grid-template-columns: 1fr; /* 1 card on mobile */
+          gap: 20px;
+        }
+
+        .results-header h1 {
+          font-size: 2.2rem;
+        }
+
+        .asteroid-image {
+          width: 150px;
+          height: 150px;
+        }
+        
+        .results-header {
+          margin-top: 100px;
+        }
+      }
+
+      /* Glass Select */
+      .glass-select {
+        width: 100%;
+        padding: 12px 40px 12px 18px;
+        background: rgba(255, 255, 255, 0.1);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+
+      .glass-select:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .glass-select:focus {
+        outline: none;
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(100, 150, 255, 0.5);
+        box-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+      }
+
+      .glass-select option {
+        background: rgba(10, 10, 30, 0.95);
+        color: #fff;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <!-- Galaxy Background -->
+    <div class="galaxy-bg">
+      <div class="nebula"></div>
+      <div class="stars-tiny"></div>
+      <div class="stars-small"></div>
+      <div class="stars-medium"></div>
+      <div class="stars-large"></div>
+      <div class="stars-xlarge"></div>
+      <div class="stars-blue"></div>
+      <div class="stars-yellow"></div>
+      <div class="stars-corner-topleft"></div>
+      <div class="stars-corner-topright"></div>
+      <div class="stars-corner-bottomleft"></div>
+      <div class="stars-corner-bottomright"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star-2"></div>
+      <div class="shooting-star-3"></div>
+    </div>
+
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="navbar-logo">Beyond Us</div>
+        <ul class="navbar-menu">
+          <li><a href="#about">About</a></li>
+          <li><a href="#discover">Discover</a></li>
+          <li><a href="#try">Try</a></li>
+        </ul>
+      </div>
+    </nav>
+    <di class="content">
+
+    
+      <div class="results-header">
+    <h1>Asteroids that might hit earth within the next <span id="timeframe-display">1 Year</span></h1>
+</div>
+
+      <div class="asteroids-grid" id="asteroids-grid">
+        <!-- الكويكبات سيتم إضافتها هنا -->
+      </div>
+    </div>
+
+    <script>
+      // بيانات الكويكبات مع الصور
+      const asteroidsData = [
+        { 
+          id: 1, 
+          name: "2025-AB3", 
+          image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=400&fit=crop&crop=center",
+          timeframe: [1, 5, 10, 15, 50, 100]
+        },
+        { 
+          id: 2, 
+          name: "2025-CD4", 
+          image: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&h=400&fit=crop&crop=center",
+          timeframe: [1, 5, 10, 15, 50, 100]
+        },
+        { 
+          id: 3, 
+          name: "2025-EF5", 
+          image: "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=400&h=400&fit=crop&crop=center",
+          timeframe: [1, 5, 10, 15, 50, 100]
+        },
+        { 
+          id: 4, 
+          name: "2025-GH6", 
+          image: "https://images.unsplash.com/photo-1502136969935-8d8eef54d77b?w=400&h=400&fit=crop&crop=center",
+          timeframe: [5, 10, 15, 50, 100]
+        },
+        { 
+          id: 5, 
+          name: "2025-IJ7", 
+          image: "https://images.unsplash.com/photo-1462332420958-a05d1e002413?w=400&h=400&fit=crop&crop=center",
+          timeframe: [1, 5, 10, 15, 50, 100]
+        },
+        { 
+          id: 6, 
+          name: "2026-KL8", 
+          image: "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=400&h=400&fit=crop&crop=center",
+          timeframe: [10, 15, 50, 100]
+        },
+        { 
+          id: 7, 
+          name: "2026-MN9", 
+          image: "https://images.unsplash.com/photo-1630142771937-86e30961baca?w=400&h=400&fit=crop&crop=center",
+          timeframe: [15, 50, 100]
+        },
+        { 
+          id: 8, 
+          name: "2027-OP1", 
+          image: "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=400&fit=crop&crop=center",
+          timeframe: [15, 50, 100]
+        }
+      ];
+
+      // عناصر DOM
+      const asteroidsGrid = document.getElementById('asteroids-grid');
+      const timeframeInfo = document.getElementById('timeframe-info');
+
+      // المدة الافتراضية
+      let currentDuration = 1;
+
+      // تهيئة الصفحة
+      document.addEventListener('DOMContentLoaded', function() {
+        // الحصول على المدة من URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const timeframe = urlParams.get('timeframe');
+        if (timeframe) {
+          currentDuration = parseInt(timeframe);
+        }
+        
+        updateAsteroidsDisplay(currentDuration);
+      });
+
+      // دالة تحديث عرض الكويكبات
+      // دالة تحديث عرض الكويكبات
+function updateAsteroidsDisplay(duration) {
+    asteroidsGrid.innerHTML = '';
+    
+    // تصفية الكويكبات المناسبة للمدة
+    const asteroidsToShow = asteroidsData.filter(asteroid => 
+        asteroid.timeframe.includes(duration)
+    );
+    
+    // تحديث العنوان مباشرة
+    const timeframeDisplay = document.getElementById('timeframe-display');
+    timeframeDisplay.textContent = getDurationText(duration);
+    
+    // إضافة الكويكبات
+    asteroidsToShow.forEach(asteroid => {
+        const asteroidCard = createAsteroidCard(asteroid);
+        asteroidsGrid.appendChild(asteroidCard);
+    });
+}
+
+      // دالة إنشاء كرت كويكب
+      function createAsteroidCard(asteroid) {
+        const card = document.createElement('div');
+        card.className = 'asteroid-card';
+        
+        card.innerHTML = `
+          <img src="${asteroid.image}" alt="${asteroid.name}" class="asteroid-image">
+          <button class="more-info-btn" onclick="showAsteroidInfo('${asteroid.name}')">
+            More Info
+          </button>
+          <div class="asteroid-name">${asteroid.name}</div>
+        `;
+        
+        return card;
+      }
+
+      // دالة للحصول على نص المدة
+      function getDurationText(duration) {
+        switch(duration) {
+          case 1: return "Next 1 Year";
+          case 5: return "Next 5 Years";
+          case 10: return "Next 10 Years";
+          case 15: return "Next 15 Years";
+          case 50: return "Next 50 Years";
+          case 100: return "Next 100 Years";
+          default: return "Next 1 Year";
+        }
+      }
+
+    
+function showAsteroidInfo(asteroidName) {
+    window.location.href = `details.html?asteroid=${asteroidName}`;
+}
+    </script>
+  </body>
+</html>

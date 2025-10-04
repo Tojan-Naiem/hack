@@ -17,10 +17,10 @@ import random
 from typing import Dict
 import hashlib
 from math import radians, sin, cos, sqrt, atan2
+import datetime
 
 # =============================
-# ASTEROID TYPE CLASSIFIER
-# =============================
+# ASTERO
 
 import random
 from typing import Dict
@@ -1004,8 +1004,8 @@ def generate_impact_site(asteroid_id: int) -> Tuple[float, float]:
     ]
     return impact_sites[asteroid_id % len(impact_sites)]
 
-def calculate_impact_radius(energy_mt: float) -> float:
-    """Calculate impact radius based on energy"""
+# Function to calculate asteroid impact radius based on energy
+def calculate_impact_radius(energy_mt):
     if energy_mt < 1:
         return 5
     elif energy_mt < 10:
@@ -1015,20 +1015,27 @@ def calculate_impact_radius(energy_mt: float) -> float:
     else:
         return 50
 
-def classify_impact_energy(energy_mt: float) -> str:
-    """Classify impact energy"""
-    if energy_mt < 0.01:
-        return "Very Small"
-    elif energy_mt < 1:
-        return "Small"
-    elif energy_mt < 10:
-        return "Medium"
-    elif energy_mt < 100:
-        return "Large"
-    elif energy_mt < 1000:
-        return "Very Large"
-    else:
-        return "Extinction Level"
+# Function to calculate countdown to impact
+def calculate_countdown(impact_date):
+    current_date = datetime.datetime.now()
+    impact_datetime = datetime.datetime.strptime(impact_date, "%Y-%m-%dT%H:%M:%S")
+    countdown = impact_datetime - current_date
+    return {
+        "days": countdown.days,
+        "hours": countdown.seconds // 3600,
+        "minutes": (countdown.seconds % 3600) // 60,
+        "seconds": countdown.seconds % 60
+    }
+
+# Example usage
+asteroid_energy = 155.07  # Example energy in megatons
+impact_date = "2028-06-15T18:30:00"  # Example impact date
+
+impact_radius = calculate_impact_radius(asteroid_energy)
+countdown = calculate_countdown(impact_date)
+
+print(f"Impact Radius: {impact_radius} km")
+print(f"Countdown: {countdown['days']} days, {countdown['hours']} hours, {countdown['minutes']} minutes, {countdown['seconds']} seconds")
 
 def calculate_risk_score(asteroid, distance_au: float) -> float:
     """Calculate comprehensive risk score (0-1)"""

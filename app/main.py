@@ -1482,7 +1482,266 @@ async def get_nearby_earthquakes(
         "seismic_risk_assessment": usgs_analyzer.calculate_seismic_risk(lat, lng),
         "earthquakes": earthquakes
     }
+from app.models import UserAsteroidInput, UserImpactAnalysis
 
+# =============================
+# USER INPUT APIS
+# =============================
+
+@app.post("/user/impact-analysis", response_model=UserImpactAnalysis)
+async def calculate_user_impact_analysis(user_input: UserAsteroidInput):
+    """
+    Calculate impact analysis based on user input
+    """
+    # Calculate mass if not provided
+    if user_input.mass_kg is None:
+        volume = (4/3) * 3.14159 * ((user_input.diameter_km * 1000 / 2) ** 3)  # m³
+        calculated_mass = volume * user_input.density_kg_m3
+    else:
+        calculated_mass = user_input.mass_kg
+    
+    # Calculate kinetic energy
+    energy_joules = 0.5 * calculated_mass * (user_input.velocity_km_s * 1000) ** 2
+    energy_megatons = energy_joules / (4.184 * 10**15)  # Convert to megatons TNT
+    
+    # Calculate impact effects
+    impact_effects = physics.calculate_impact_effects(energy_megatons)
+    
+    # Calculate natural hazards
+    natural_hazards = await calculate_user_natural_hazards(
+        user_input.impact_lat, 
+        user_input.impact_lng, 
+        energy_megatons,
+        user_input.diameter_km
+    )
+    
+    # Generate defense recommendations
+    asteroid_data = {
+        'diameter_avg': user_input.diameter_km,
+        'velocity_km_s': user_input.velocity_km_s,
+        'miss_distance_km': 0,  # Assuming impact
+        'energy_megatons_TNT': energy_megatons
+    }
+    
+    defense_recommendations = defense_strategies.get_defense_strategies(
+        asteroid_data,
+        {"threat_level": "HIGH"}
+    )
+    
+    # Risk assessment
+    risk_assessment = calculate_user_risk_assessment(
+        user_input.diameter_km,
+        user_input.velocity_km_s,
+        energy_megatons,
+        user_input.impact_lat,
+        user_input.impact_lng
+    )
+    
+    return {
+        "input_data": user_input,
+        "calculated_mass": calculated_mass,
+        "kinetic_energy_megatons": energy_megatons,
+        "impact_effects": impact_effects,
+        "natural_hazards": natural_hazards,
+        "defense_recommendations": defense_recommendations,
+        "risk_assessment": risk_assessment
+    }
+
+@app.get("/user/defense-strategies")
+async def get_all_defense_strategies():
+    """Get all available defense strategies for frontend dropdown"""
+    return {
+        "strategies": list(defense_strategies.DEFENSE_METHODS.values()),
+        "count": len(defense_strategies.DEFENSE_METHODS)
+    }
+
+@app.post("/user/defense-effectiveness")
+async def calculate_defense_effectiveness(user_input: UserAsteroidInput):
+    """Calculate effectiveness of selected defense strategy"""
+    if not user_input.defense_strategy:
+        raise HTTPException(status_code=400, detail="No defense strategy selected")
+    
+    # Find the strategy
+    strategy_key = None
+    for key, strategy in defense_strategies.DEFENSE_METHODS.items():
+        if strategy["name"] == user_input.defense_strategy:
+            strategy_key = key
+            break
+    
+    if not strategy_key:
+        raise HTTPException(status_code=404, detail="Defense strategy not found")
+    
+    # Calculate mass and energy
+    volume = (4/3) * 3.14159 * ((user_input.diameter_km * 1000 / 2) ** 3)
+    calculated_mass = volume * user_input.density_kg_m3
+    energy_joules = 0.5 * calculated_mass * (user_input.velocity_km_s * 1000) ** 2
+    energy_megatons = energy_joules / (4.184 * 10**15)
+    
+    # Create mock asteroid data for defense calculation
+    asteroid_data = {
+        'diameter_avg': user_input.diameter_km,
+        'velocity_km_s': user_input.velocity_km_s,
+        'miss_distance_km': 0,
+        'energy_megatons_TNT': energy_megatons,
+        'name': 'User-Defined Asteroid'
+    }
+    
+    # Get enhanced strategy
+    enhanced_strategy = defense_strategies._enhance_strategy(
+        defense_strategies.DEFENSE_METHODS[strategy_key],
+        asteroid_data,
+        {"threat_level": "HIGH"}
+    )
+    
+    return {
+        "selected_strategy": user_input.defense_strategy,
+        "asteroid_energy_megatons": energy_megatons,
+        "effectiveness_analysis": enhanced_strategy,
+        "mission_feasibility": assess_mission_feasibility(user_input.diameter_km, energy_megatons)
+    }
+
+# =============================
+# HELPER FUNCTIONS FOR USER INPUT
+# =============================
+
+async def calculate_user_natural_hazards(lat: float, lng: float, energy_megatons: float, diameter_km: float):
+    """Calculate natural hazards for user-defined asteroid"""
+    is_ocean = location_analyzer.is_ocean_location(lat, lng)
+    
+    mock_asteroid = {
+        'energy_megatons_TNT': energy_megatons,
+        'diameter_avg': diameter_km,
+        'velocity_km_s': 20,  # Default for calculation
+        'miss_distance_km': 0
+    }
+    
+    return {
+        "seismic_hazards": {
+            "earthquake_risk": usgs_analyzer.calculate_seismic_risk(lat, lng),
+            "induced_earthquakes": calculate_impact_induced_quakes(mock_asteroid),
+            "ground_shaking_intensity": calculate_ground_shaking_intensity(mock_asteroid)
+        },
+        "tsunami_risk": calculate_tsunami_risk(lat, lng, mock_asteroid),
+        "atmospheric_effects": {
+            "shockwave_radius_km": calculate_shockwave_radius(mock_asteroid),
+            "heat_blast_radius": calculate_heat_radius(mock_asteroid),
+            "debris_cloud": estimate_debris_cloud(mock_asteroid)
+        },
+        "impact_location_type": "ocean" if is_ocean else "land"
+    }
+
+def calculate_user_risk_assessment(diameter: float, velocity: float, energy: float, lat: float, lng: float):
+    """Calculate risk assessment for user-defined asteroid"""
+    is_ocean = location_analyzer.is_ocean_location(lat, lng)
+    
+    # Calculate risk score (0-100)
+    size_score = min(100, diameter * 10)  # 10 km = 100 points
+    velocity_score = min(100, velocity * 1.5)  # 70 km/s = 105 → 100
+    energy_score = min(100, energy / 10)  # 1000 MT = 100 points
+    
+    total_score = (size_score * 0.3) + (velocity_score * 0.2) + (energy_score * 0.5)
+    
+    # Adjust for location
+    if is_ocean and energy > 10:
+        total_score = min(100, total_score * 1.2)  # Increase risk for ocean impacts
+    
+    # Determine risk level
+    if total_score >= 80:
+        risk_level = "EXTREME"
+    elif total_score >= 60:
+        risk_level = "VERY_HIGH"
+    elif total_score >= 40:
+        risk_level = "HIGH"
+    elif total_score >= 20:
+        risk_level = "MEDIUM"
+    else:
+        risk_level = "LOW"
+    
+    return {
+        "risk_score": round(total_score, 1),
+        "risk_level": risk_level,
+        "factors": {
+            "size_risk": round(size_score, 1),
+            "velocity_risk": round(velocity_score, 1),
+            "energy_risk": round(energy_score, 1),
+            "location_risk": "HIGH" if is_ocean and energy > 10 else "MEDIUM"
+        },
+        "emergency_response": generate_user_emergency_response(risk_level, energy, is_ocean)
+    }
+
+def generate_user_emergency_response(risk_level: str, energy: float, is_ocean: bool):
+    """Generate emergency response for user scenario"""
+    responses = {
+        "EXTREME": [
+            "🚨 IMMEDIATE GLOBAL ALERT - Evacuation required",
+            "🌍 International cooperation essential",
+            "📡 Continuous monitoring and trajectory updates",
+            "🏥 Activate emergency medical response worldwide"
+        ],
+        "VERY_HIGH": [
+            "⚠️ High-priority alert to affected regions",
+            "🏗️ Reinforce critical infrastructure",
+            "📊 Real-time impact assessment",
+            "🔍 Enhanced observation protocols"
+        ],
+        "HIGH": [
+            "🔶 Regional alert system activation",
+            "🏠 Review evacuation plans",
+            "📱 Public awareness campaign",
+            "🔬 Scientific monitoring intensified"
+        ]
+    }
+    
+    default_response = ["✅ Standard monitoring procedures", "📝 Regular risk assessment updates"]
+    
+    return responses.get(risk_level, default_response)
+
+def assess_mission_feasibility(diameter: float, energy: float):
+    """Assess mission feasibility for defense strategies"""
+    if diameter < 0.1:
+        return {
+            "feasibility": "VERY_HIGH",
+            "timeframe": "1-3 years",
+            "cost_estimate": "Low ($100M - $500M)",
+            "success_probability": "85-95%"
+        }
+    elif diameter < 0.5:
+        return {
+            "feasibility": "HIGH", 
+            "timeframe": "3-7 years",
+            "cost_estimate": "Medium ($500M - $2B)",
+            "success_probability": "70-85%"
+        }
+    elif diameter < 2.0:
+        return {
+            "feasibility": "MEDIUM",
+            "timeframe": "7-15 years", 
+            "cost_estimate": "High ($2B - $10B)",
+            "success_probability": "50-70%"
+        }
+    else:
+        return {
+            "feasibility": "LOW",
+            "timeframe": "15-25 years",
+            "cost_estimate": "Very High ($10B+)",
+            "success_probability": "30-50%"
+        }
+
+@app.get("/user/impact-locations/suggestions")
+async def get_impact_location_suggestions():
+    """Get suggested impact locations for testing"""
+    return {
+        "cities": [
+            {"name": "New York, USA", "lat": 40.7128, "lng": -74.0060},
+            {"name": "Tokyo, Japan", "lat": 35.6762, "lng": 139.6503},
+            {"name": "London, UK", "lat": 51.5074, "lng": -0.1278},
+            {"name": "Sydney, Australia", "lat": -33.8688, "lng": 151.2093},
+            {"name": "Pacific Ocean", "lat": 0, "lng": -160},
+            {"name": "Atlantic Ocean", "lat": 30, "lng": -40},
+            {"name": "Sahara Desert", "lat": 23, "lng": 13},
+            {"name": "Himalayan Mountains", "lat": 28, "lng": 87}
+        ]
+    }
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=Config.HOST, port=Config.PORT)

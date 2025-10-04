@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Asteroid Impact Simulator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c2e 0%, #1a1a3e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .simulator-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            height: 80vh;
+        }
+
+        @media (max-width: 1024px) {
+            .simulator-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+        }
+
+        .visualization-panel {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #00ffff;
+        }
+
+        .value-display {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ffff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 1rem;
+        }
+
+        select option {
+            background: #1a1a3e;
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 10px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .simulation-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .sim-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sim-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+        }
+
+        .impact-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .explosion {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #ff0000 0%, #ff4500 30%, transparent 70%);
+            border-radius: 50%;
+            animation: explode 2s ease-out;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(2); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+        }
+
+        .shockwave {
+            position: absolute;
+            border: 2px solid #ff4500;
+            border-radius: 50%;
+            animation: shockwave 3s ease-out;
+        }
+
+        @keyframes shockwave {
+            0% { width: 0; height: 0; opacity: 1; }
+            100% { width: 1000px; height: 1000px; opacity: 0; }
+        }
+
+        .tsunami-wave {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            height: 20px;
+            animation: tsunami 4s linear infinite;
+        }
+
+        @keyframes tsunami {
+            0% { transform: translateX(-100%); opacity: 0.8; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+
+        .results-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results-panel.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #00ffff;
+        }
+
+        .result-section h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .metric .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00ffff;
+            margin-bottom: 5px;
+        }
+
+        .metric .label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .risk-indicator {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .risk-low { background: #4CAF50; }
+        .risk-medium { background: #FF9800; }
+        .risk-high { background: #F44336; }
+        .risk-extreme { background: #9C27B0; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .shake-map {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(2px,-2px); }
+            50% { transform: translate(-2px,2px); }
+            75% { transform: translate(2px,2px); }
+            100% { transform: translate(0,0); }
+        }
+
+        .simulation-stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .stat-item {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-value {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .impact-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff0000;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px #ff0000;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 NASA Asteroid Impact Simulator</h1>
+            <p>Real-time impact simulation with visual effects and hazard analysis</p>
+        </div>
+
+        <div class="simulator-layout">
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h2>🚀 Asteroid Parameters</h2>
+                
+                <div class="input-group">
+                    <label>Asteroid Diameter (km)</label>
+                    <div class="value-display" id="diameter-value">1.00 km</div>
+                    <input type="range" id="diameter" min="0.01" max="10" step="0.01" value="1.0">
+                    <small>Range: 0.01 km (10m) - 10 km</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Velocity (km/s)</label>
+                    <div class="value-display" id="velocity-value">20 km/s</div>
+                    <input type="range" id="velocity" min="1" max="70" step="1" value="20">
+                    <small>Range: 1 km/s - 70 km/s</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Density (kg/m³)</label>
+                    <select id="density">
+                        <option value="1500">Porous (1500 kg/m³) - C-type</option>
+                        <option value="2000" selected>Average (2000 kg/m³) - S-type</option>
+                        <option value="5000">Metallic (5000 kg/m³) - M-type</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Entry Angle</label>
+                    <div class="value-display" id="angle-value">45°</div>
+                    <input type="range" id="angle" min="0" max="90" step="1" value="45">
+                    <small>0° (horizontal) - 90° (vertical)</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Impact Location</label>
+                    <div class="value-display" id="coordinates">Lat: 40.7128, Lng: -74.0060 (New York)</div>
+                    <div class="simulation-controls">
+                        <button class="sim-btn" onclick="selectLocation('newyork')">🗽 New York</button>
+                        <button class="sim-btn" onclick="selectLocation('tokyo')">🗼 Tokyo</button>
+                        <button class="sim-btn" onclick="selectLocation('ocean')">🌊 Ocean</button>
+                        <button class="sim-btn" onclick="selectLocation('desert')">🏜️ Desert</button>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="calculateImpact()">🚀 SIMULATE IMPACT</button>
+                <button class="btn" onclick="startSimulation()" style="background: linear-gradient(45deg, #ff4444, #ffaa00);">💥 START VISUAL SIMULATION</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Calculating impact effects...</p>
+                </div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="visualization-panel">
+                <div id="map"></div>
+                <div class="impact-overlay" id="impact-overlay"></div>
+                <div class="simulation-stats" id="simulation-stats" style="display: none;">
+                    <h3>📊 Live Impact Data</h3>
+                    <div class="stat-item">Energy: <span class="stat-value" id="stat-energy">0 MT</span></div>
+                    <div class="stat-item">Crater Size: <span class="stat-value" id="stat-crater">0 km</span></div>
+                    <div class="stat-item">Shockwave: <span class="stat-value" id="stat-shockwave">0 km</span></div>
+                    <div class="stat-item">Casualties: <span class="stat-value" id="stat-casualties">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="results-panel" id="results-panel">
+            <h2>📊 Impact Analysis Results</h2>
+            
+            <div class="result-section">
+                <h3>💥 Impact Energy</h3>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="value" id="energy-value">0</div>
+                        <div class="label">Megatons TNT</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value" id="hiroshima-value">0</div>
+                        <div class="label">Hiroshima Bombs</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value" id="mass-value">0</div>
+                        <div class="label">Mass (kg)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>⚠️ Risk Assessment</h3>
+                <div class="risk-indicator" id="risk-indicator">LOW</div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="value" id="risk-score">0</div>
+                        <div class="label">Risk Score</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value" id="crater-size">0</div>
+                        <div class="label">Crater Diameter</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value" id="destruction-radius">0</div>
+                        <div class="label">Destruction Radius</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>🌋 Natural Hazards</h3>
+                <div id="hazards-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Global variables
+        let map, marker;
+        let currentLat = 40.7128, currentLng = -74.0060;
+        let currentLocationName = "New York";
+        let simulationActive = false;
+        let impactCircles = [];
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            initializeSliders();
+        });
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            map = L.map('map').setView([currentLat, currentLng], 6);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Create custom red impact marker
+            const impactIcon = L.divIcon({
+                className: 'impact-marker',
+                html: '<div style="width: 20px; height: 20px; background: #ff0000; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 20px #ff0000;"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            marker = L.marker([currentLat, currentLng], { icon: impactIcon })
+                .addTo(map)
+                .bindPopup('Impact Location: ' + currentLocationName)
+                .openPopup();
+
+            map.on('click', function(e) {
+                if (!simulationActive) {
+                    currentLat = e.latlng.lat;
+                    currentLng = e.latlng.lng;
+                    currentLocationName = "Selected Location";
+                    updateMarker();
+                    updateCoordinatesDisplay();
+                    
+                    // Clear previous circles
+                    clearImpactCircles();
+                }
+            });
+        }
+
+        function updateMarker() {
+            // Update marker position with custom icon
+            const impactIcon = L.divIcon({
+                className: 'impact-marker',
+                html: '<div style="width: 20px; height: 20px; background: #ff0000; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 20px #ff0000;"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            map.removeLayer(marker);
+            marker = L.marker([currentLat, currentLng], { icon: impactIcon })
+                .addTo(map)
+                .bindPopup('Impact Location: ' + currentLocationName)
+                .openPopup();
+        }
+
+        function clearImpactCircles() {
+            impactCircles.forEach(circle => {
+                if (circle && map.hasLayer(circle)) {
+                    map.removeLayer(circle);
+                }
+            });
+            impactCircles = [];
+        }
+
+        function updateCoordinatesDisplay() {
+            document.getElementById('coordinates').textContent = 
+                `Lat: ${currentLat.toFixed(4)}, Lng: ${currentLng.toFixed(4)} (${currentLocationName})`;
+        }
+
+        function initializeSliders() {
+            const sliders = ['diameter', 'velocity', 'angle'];
+            sliders.forEach(sliderId => {
+                const slider = document.getElementById(sliderId);
+                updateSliderDisplay(sliderId, slider.value);
+                slider.addEventListener('input', () => updateSliderDisplay(sliderId, slider.value));
+            });
+        }
+
+        function updateSliderDisplay(sliderId, value) {
+            const display = document.getElementById(sliderId + '-value');
+            if (sliderId === 'diameter') {
+                display.textContent = parseFloat(value).toFixed(2) + ' km';
+            } else if (sliderId === 'velocity') {
+                display.textContent = value + ' km/s';
+            } else if (sliderId === 'angle') {
+                display.textContent = value + '°';
+            }
+        }
+
+        // Location selection
+        function selectLocation(type) {
+            const locations = {
+                newyork: { lat: 40.7128, lng: -74.0060, name: "New York", zoom: 10 },
+                tokyo: { lat: 35.6762, lng: 139.6503, name: "Tokyo", zoom: 10 },
+                ocean: { lat: 0, lng: -160, name: "Pacific Ocean", zoom: 3 },
+                desert: { lat: 23, lng: 13, name: "Sahara Desert", zoom: 5 }
+            };
+            
+            const loc = locations[type];
+            currentLat = loc.lat;
+            currentLng = loc.lng;
+            currentLocationName = loc.name;
+            
+            map.setView([currentLat, currentLng], loc.zoom);
+            updateMarker();
+            updateCoordinatesDisplay();
+            
+            // Clear previous circles
+            clearImpactCircles();
+        }
+
+        // Calculate impact (API call)
+        async function calculateImpact() {
+            const loading = document.getElementById('loading');
+            loading.classList.add('active');
+            
+            const userData = {
+                diameter_km: parseFloat(document.getElementById('diameter').value),
+                velocity_km_s: parseFloat(document.getElementById('velocity').value),
+                density_kg_m3: parseFloat(document.getElementById('density').value),
+                entry_angle: parseFloat(document.getElementById('angle').value),
+                impact_lat: currentLat,
+                impact_lng: currentLng
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/user/impact-analysis`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(userData)
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                const results = await response.json();
+                displayResults(results);
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                showDemoResults(userData);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Visual simulation - FIXED COORDINATES
+        function startSimulation() {
+            if (simulationActive) return;
+            simulationActive = true;
+            
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            const velocity = parseFloat(document.getElementById('velocity').value);
+            const density = parseFloat(document.getElementById('density').value);
+            
+            // Calculate impact parameters
+            const volume = (4/3) * Math.PI * Math.pow(diameter * 500, 3);
+            const mass = volume * density;
+            const energy = 0.5 * mass * Math.pow(velocity * 1000, 2) / (4.184 * Math.pow(10, 15));
+            const isOcean = getLocationType(currentLat, currentLng) === 'ocean';
+            
+            // Show simulation stats
+            const stats = document.getElementById('simulation-stats');
+            stats.style.display = 'block';
+            document.getElementById('stat-energy').textContent = energy.toFixed(1) + ' MT';
+            document.getElementById('stat-crater').textContent = (diameter * 15).toFixed(1) + ' km';
+            document.getElementById('stat-shockwave').textContent = (energy * 2).toFixed(1) + ' km';
+            document.getElementById('stat-casualties').textContent = Math.round(energy * 1000).toLocaleString();
+            
+            // Clear previous circles
+            clearImpactCircles();
+            
+            // Start visual effects with CORRECT COORDINATES
+            simulateVisualImpact(energy, isOcean);
+            
+            // Show results after simulation
+            setTimeout(() => {
+                showDemoResults({
+                    diameter_km: diameter,
+                    velocity_km_s: velocity,
+                    density_kg_m3: density,
+                    impact_lat: currentLat,
+                    impact_lng: currentLng
+                });
+                simulationActive = false;
+            }, 5000);
+        }
+
+        function simulateVisualImpact(energy, isOcean) {
+            const overlay = document.getElementById('impact-overlay');
+            overlay.innerHTML = '';
+            
+            // Get marker position in pixels
+            const markerPoint = map.latLngToContainerPoint([currentLat, currentLng]);
+            
+            console.log('🎯 Impact coordinates:', currentLat, currentLng);
+            console.log('📍 Marker pixel position:', markerPoint.x, markerPoint.y);
+            
+            // Shake effect
+            document.getElementById('map').classList.add('shake-map');
+            setTimeout(() => {
+                document.getElementById('map').classList.remove('shake-map');
+            }, 1000);
+            
+            // Explosion effect - positioned at marker
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = markerPoint.x + 'px';
+            explosion.style.top = markerPoint.y + 'px';
+            overlay.appendChild(explosion);
+            
+            // Shockwave effect - positioned at marker
+            const shockwave = document.createElement('div');
+            shockwave.className = 'shockwave';
+            shockwave.style.left = markerPoint.x + 'px';
+            shockwave.style.top = markerPoint.y + 'px';
+            overlay.appendChild(shockwave);
+            
+            // Tsunami waves for ocean impacts
+            if (isOcean) {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const wave = document.createElement('div');
+                        wave.className = 'tsunami-wave';
+                        wave.style.top = (markerPoint.y + i * 10) + 'px';
+                        wave.style.width = (100 + i * 50) + '%';
+                        wave.style.left = '0px';
+                        overlay.appendChild(wave);
+                    }, i * 500);
+                }
+            }
+            
+            // Add impact circles to map with CORRECT COORDINATES
+            const craterRadius = energy * 1000; // meters
+            const craterCircle = L.circle([currentLat, currentLng], {
+                color: '#ff4444',
+                fillColor: '#ff4444',
+                fillOpacity: 0.3,
+                radius: craterRadius
+            }).addTo(map);
+            impactCircles.push(craterCircle);
+            
+            // Add destruction zone
+            const destructionRadius = energy * 2000;
+            const destructionCircle = L.circle([currentLat, currentLng], {
+                color: '#ffaa00',
+                fillColor: '#ffaa00',
+                fillOpacity: 0.2,
+                radius: destructionRadius
+            }).addTo(map);
+            impactCircles.push(destructionCircle);
+            
+            // Add shockwave zone
+            const shockwaveRadius = energy * 3000;
+            const shockwaveCircle = L.circle([currentLat, currentLng], {
+                color: '#ffff00',
+                fillColor: '#ffff00',
+                fillOpacity: 0.1,
+                radius: shockwaveRadius
+            }).addTo(map);
+            impactCircles.push(shockwaveCircle);
+            
+            console.log('🎯 Circles added at:', currentLat, currentLng);
+            console.log('📏 Crater radius:', craterRadius, 'm');
+            console.log('📏 Destruction radius:', destructionRadius, 'm');
+        }
+
+        function getLocationType(lat, lng) {
+            // Simple ocean detection
+            if ((lat >= -60 && lat <= 60) && ((lng <= -60) || (lng >= 20 && lng <= 120))) {
+                return 'ocean';
+            }
+            return 'land';
+        }
+
+        function displayResults(data) {
+            document.getElementById('energy-value').textContent = data.kinetic_energy_megatons.toFixed(1);
+            document.getElementById('hiroshima-value').textContent = Math.round(data.kinetic_energy_megatons * 66.67).toLocaleString();
+            document.getElementById('mass-value').textContent = formatMass(data.calculated_mass);
+            document.getElementById('risk-score').textContent = data.risk_assessment.risk_score;
+            document.getElementById('crater-size').textContent = data.impact_effects.crater_diameter_km + ' km';
+            document.getElementById('destruction-radius').textContent = data.impact_effects.destruction_radius_km + ' km';
+            
+            const riskLevel = data.risk_assessment.risk_level;
+            const riskIndicator = document.getElementById('risk-indicator');
+            riskIndicator.textContent = riskLevel;
+            riskIndicator.className = 'risk-indicator ' + getRiskClass(riskLevel);
+            
+            updateHazardsList(data.natural_hazards);
+            document.getElementById('results-panel').classList.add('active');
+        }
+
+        function showDemoResults(userData) {
+            const diameter = userData.diameter_km;
+            const velocity = userData.velocity_km_s;
+            const density = userData.density_kg_m3;
+            
+            const volume = (4/3) * Math.PI * Math.pow(diameter * 500, 3);
+            const mass = volume * density;
+            const energy = 0.5 * mass * Math.pow(velocity * 1000, 2) / (4.184 * Math.pow(10, 15));
+            const isOcean = getLocationType(currentLat, currentLng) === 'ocean';
+            
+            const demoResults = {
+                kinetic_energy_megatons: energy,
+                calculated_mass: mass,
+                risk_assessment: {
+                    risk_level: energy > 100 ? 'HIGH' : energy > 10 ? 'MEDIUM' : 'LOW',
+                    risk_score: Math.min(95, energy * 1.5)
+                },
+                impact_effects: {
+                    crater_diameter_km: (diameter * 15).toFixed(1),
+                    destruction_radius_km: (diameter * 10).toFixed(1)
+                },
+                natural_hazards: {
+                    tsunami_risk: { risk_level: isOcean ? "HIGH" : "NONE" },
+                    seismic_hazards: { earthquake_risk: { risk_level: energy > 50 ? "HIGH" : "MEDIUM" } },
+                    atmospheric_effects: {
+                        shockwave_radius_km: (energy * 2).toFixed(1),
+                        debris_cloud: { climate_impact: energy > 100 ? "REGIONAL EFFECTS" : "LOCALIZED" }
+                    },
+                    impact_location_type: isOcean ? "ocean" : "land"
+                }
+            };
+            
+            displayResults(demoResults);
+        }
+
+        function updateHazardsList(hazards) {
+            const container = document.getElementById('hazards-list');
+            const items = [
+                { icon: '🌊', text: `Tsunami Risk: ${hazards.tsunami_risk?.risk_level || 'NONE'}` },
+                { icon: '🏔️', text: `Seismic Activity: ${hazards.seismic_hazards?.earthquake_risk?.risk_level || 'LOW'}` },
+                { icon: '💨', text: `Shockwave Radius: ${hazards.atmospheric_effects?.shockwave_radius_km || '0'} km` },
+                { icon: '🌫️', text: `Debris Cloud: ${hazards.atmospheric_effects?.debris_cloud?.climate_impact || 'MINIMAL'}` },
+                { icon: '📍', text: `Impact Type: ${hazards.impact_location_type || 'LAND'}` }
+            ];
+            
+            container.innerHTML = items.map(item => 
+                `<div style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px;">
+                    ${item.icon} ${item.text}
+                </div>`
+            ).join('');
+        }
+
+        function formatMass(kg) {
+            if (kg >= 1e12) return (kg / 1e12).toFixed(2) + 'T kg';
+            if (kg >= 1e9) return (kg / 1e9).toFixed(2) + 'B kg';
+            if (kg >= 1e6) return (kg / 1e6).toFixed(2) + 'M kg';
+            return kg.toFixed(0) + ' kg';
+        }
+
+        function getRiskClass(riskLevel) {
+            const classes = {
+                'LOW': 'risk-low',
+                'MEDIUM': 'risk-medium', 
+                'HIGH': 'risk-high',
+                'EXTREME': 'risk-extreme'
+            };
+            return classes[riskLevel] || 'risk-medium';
+        }
+    </script>
+</body>
+</html>

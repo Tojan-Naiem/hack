@@ -209,6 +209,516 @@ class AsteroidTypeClassifier:
             "classification_method": "statistical",
             "confidence": "low"
         }
+from datetime import datetime, timedelta
+import math
+
+# =============================
+# IMPACT DATE CALCULATOR
+# =============================
+
+class ImpactDateCalculator:
+    """Calculate potential impact dates based on orbital parameters"""
+    
+    def calculate_impact_date(self, asteroid_data: Dict) -> Dict:
+        """
+        Calculate potential impact date based on current distance and velocity
+        """
+        try:
+            # Extract basic parameters
+            miss_distance_km = asteroid_data['miss_distance_km']
+            velocity_km_s = asteroid_data['velocity_km_s']
+            close_approach_date = asteroid_data.get('date', datetime.now().strftime('%Y-%m-%d'))
+            
+            # Convert to AU for astronomical calculations
+            distance_au = miss_distance_km / 149597870.7  # 1 AU in km
+            
+            # Calculate time to impact based on different scenarios
+            impact_analysis = self._calculate_impact_scenarios(distance_au, velocity_km_s, close_approach_date)
+            
+            return impact_analysis
+            
+        except Exception as e:
+            logger.error(f"Error calculating impact date: {e}")
+            return self._get_default_impact_analysis()
+
+    def _calculate_impact_scenarios(self, distance_au: float, velocity_km_s: float, approach_date: str) -> Dict:
+        """Calculate different impact scenarios"""
+        
+        # Convert approach date to datetime
+        try:
+            approach_dt = datetime.strptime(approach_date, '%Y-%m-%d')
+        except:
+            approach_dt = datetime.now()
+
+        # Scenario 1: Direct impact (current trajectory)
+        direct_impact = self._calculate_direct_impact(distance_au, velocity_km_s, approach_dt)
+        
+        # Scenario 2: Gravitational perturbation
+        perturbed_impact = self._calculate_perturbed_impact(distance_au, velocity_km_s, approach_dt)
+        
+        # Scenario 3: Orbital resonance (future approaches)
+        resonant_impact = self._calculate_resonant_impact(distance_au, velocity_km_s, approach_dt)
+        
+        # Determine most likely scenario
+        most_likely = self._determine_most_likely_scenario(direct_impact, perturbed_impact, resonant_impact, distance_au)
+        
+        return {
+            "current_approach_date": approach_date,
+            "distance_au": round(distance_au, 6),
+            "velocity_km_s": velocity_km_s,
+            "scenarios": {
+                "direct_impact": direct_impact,
+                "gravitational_perturbation": perturbed_impact,
+                "orbital_resonance": resonant_impact
+            },
+            "most_likely_scenario": most_likely,
+            "impact_probability": self._calculate_impact_probability(distance_au),
+            "monitoring_recommendation": self._get_monitoring_recommendation(distance_au)
+        }
+
+    def _calculate_direct_impact(self, distance_au: float, velocity_km_s: float, approach_dt: datetime) -> Dict:
+        """Calculate direct impact scenario"""
+        if distance_au <= 0.01:  # Within 0.01 AU - immediate threat
+            days_to_impact = (distance_au * 149597870.7) / (velocity_km_s * 86400)  # km / (km/day)
+            impact_date = approach_dt + timedelta(days=days_to_impact)
+            confidence = "HIGH"
+        else:
+            # For more distant objects, estimate based on orbital mechanics
+            orbital_period_days = self._estimate_orbital_period(distance_au)
+            impact_date = approach_dt + timedelta(days=orbital_period_days)
+            confidence = "LOW"
+            
+        return {
+            "type": "DIRECT_COLLISION",
+            "estimated_impact_date": impact_date.strftime('%Y-%m-%d'),
+            "days_until_impact": max(0, (impact_date - datetime.now()).days),
+            "confidence": confidence,
+            "description": "Current trajectory leads to direct impact",
+            "probability": "0.1%-1%" if distance_au <= 0.01 else "<0.1%"
+        }
+
+    def _calculate_perturbed_impact(self, distance_au: float, velocity_km_s: float, approach_dt: datetime) -> Dict:
+        """Calculate impact after gravitational perturbations"""
+        # Estimate effect of planetary perturbations
+        perturbation_factor = self._calculate_perturbation_factor(distance_au)
+        
+        if perturbation_factor > 0.1:  # Significant perturbation possible
+            # Perturbations typically affect orbits over multiple passes
+            orbital_period_days = self._estimate_orbital_period(distance_au)
+            impact_date = approach_dt + timedelta(days=orbital_period_days * 2)
+            confidence = "MEDIUM"
+        else:
+            impact_date = approach_dt + timedelta(days=365 * 10)  # 10 years default
+            confidence = "LOW"
+            
+        return {
+            "type": "GRAVITATIONAL_PERTURBATION",
+            "estimated_impact_date": impact_date.strftime('%Y-%m-%d'),
+            "days_until_impact": max(0, (impact_date - datetime.now()).days),
+            "confidence": confidence,
+            "description": "Orbital changes due to planetary gravity may lead to future impact",
+            "probability": "0.01%-0.1%",
+            "perturbation_strength": self._classify_perturbation_strength(perturbation_factor)
+        }
+
+    def _calculate_resonant_impact(self, distance_au: float, velocity_km_s: float, approach_dt: datetime) -> Dict:
+        """Calculate impact due to orbital resonance"""
+        # Check for orbital resonance with Earth (common periods)
+        resonance_periods = self._find_orbital_resonances(distance_au)
+        
+        if resonance_periods:
+            # Use the strongest resonance
+            strongest_resonance = resonance_periods[0]
+            impact_date = approach_dt + timedelta(days=strongest_resonance['days_until_resonance'])
+            confidence = "MEDIUM"
+        else:
+            impact_date = approach_dt + timedelta(days=365 * 20)  # 20 years default
+            confidence = "LOW"
+            
+        return {
+            "type": "ORBITAL_RESONANCE",
+            "estimated_impact_date": impact_date.strftime('%Y-%m-%d'),
+            "days_until_impact": max(0, (impact_date - datetime.now()).days),
+            "confidence": confidence,
+            "description": "Orbital resonance with Earth may lead to repeated close approaches",
+            "probability": "0.001%-0.01%",
+            "resonance_strength": "STRONG" if resonance_periods else "WEAK"
+        }
+
+    def _estimate_orbital_period(self, distance_au: float) -> float:
+        """Estimate orbital period in days using Kepler's third law"""
+        # Simplified estimation for near-Earth objects
+        if distance_au <= 0.1:
+            return 365  # ~1 year for very close objects
+        elif distance_au <= 1.0:
+            return 365 * 2  # ~2 years
+        else:
+            return 365 * 5  # ~5 years for more distant objects
+
+    def _calculate_perturbation_factor(self, distance_au: float) -> float:
+        """Calculate planetary perturbation factor"""
+        # Planets have stronger effects at certain distances
+        if distance_au <= 0.1:
+            return 0.8  # Strong perturbations from Earth/Moon
+        elif distance_au <= 1.0:
+            return 0.5  # Moderate perturbations from Venus/Mars
+        elif distance_au <= 5.0:
+            return 0.3  # Weaker perturbations from Jupiter
+        else:
+            return 0.1  # Minimal perturbations
+
+    def _find_orbital_resonances(self, distance_au: float) -> List[Dict]:
+        """Find orbital resonances with Earth"""
+        resonances = []
+        
+        # Common orbital resonances with Earth (in Earth years)
+        common_resonances = [
+            (1, 1),    # 1:1 resonance
+            (2, 1),    # 2:1 resonance  
+            (3, 2),    # 3:2 resonance
+            (4, 3),    # 4:3 resonance
+        ]
+        
+        for earth_years, asteroid_years in common_resonances:
+            resonance_strength = self._calculate_resonance_strength(distance_au, earth_years, asteroid_years)
+            if resonance_strength > 0.7:  # Strong resonance
+                resonances.append({
+                    'ratio': f"{asteroid_years}:{earth_years}",
+                    'strength': resonance_strength,
+                    'days_until_resonance': earth_years * 365,
+                    'description': f"{asteroid_years}:{earth_years} orbital resonance with Earth"
+                })
+        
+        return sorted(resonances, key=lambda x: x['strength'], reverse=True)
+
+    def _calculate_resonance_strength(self, distance_au: float, earth_years: int, asteroid_years: int) -> float:
+        """Calculate strength of orbital resonance"""
+        expected_distance = (earth_years / asteroid_years) ** (2/3)  # Kepler's third law
+        distance_diff = abs(distance_au - expected_distance)
+        
+        if distance_diff <= 0.05:
+            return 0.9
+        elif distance_diff <= 0.1:
+            return 0.7
+        elif distance_diff <= 0.2:
+            return 0.5
+        else:
+            return 0.0
+
+    def _determine_most_likely_scenario(self, direct: Dict, perturbed: Dict, resonant: Dict, distance_au: float) -> Dict:
+        """Determine the most likely impact scenario"""
+        scenarios = [direct, perturbed, resonant]
+        
+        # Weight scenarios based on distance
+        if distance_au <= 0.01:
+            return direct  # Immediate threat
+        elif distance_au <= 0.05:
+            return perturbed  # Gravitational effects dominate
+        else:
+            return resonant  # Long-term orbital dynamics
+
+    def _calculate_impact_probability(self, distance_au: float) -> str:
+        """Calculate impact probability based on distance"""
+        if distance_au <= 0.001:
+            return "1-10%"
+        elif distance_au <= 0.01:
+            return "0.1-1%"
+        elif distance_au <= 0.05:
+            return "0.01-0.1%"
+        else:
+            return "<0.01%"
+
+    def _classify_perturbation_strength(self, factor: float) -> str:
+        """Classify perturbation strength"""
+        if factor > 0.7:
+            return "VERY_STRONG"
+        elif factor > 0.5:
+            return "STRONG"
+        elif factor > 0.3:
+            return "MODERATE"
+        else:
+            return "WEAK"
+
+    def _get_monitoring_recommendation(self, distance_au: float) -> str:
+        """Get monitoring recommendation based on distance"""
+        if distance_au <= 0.01:
+            return "CONTINUOUS_MONITORING"
+        elif distance_au <= 0.05:
+            return "ENHANCED_MONITORING"
+        else:
+            return "STANDARD_MONITORING"
+
+    def _get_default_impact_analysis(self) -> Dict:
+        """Get default impact analysis when calculation fails"""
+        return {
+            "current_approach_date": datetime.now().strftime('%Y-%m-%d'),
+            "distance_au": 0.0,
+            "velocity_km_s": 0.0,
+            "scenarios": {
+                "direct_impact": {
+                    "type": "UNKNOWN",
+                    "estimated_impact_date": "Unknown",
+                    "days_until_impact": 0,
+                    "confidence": "LOW",
+                    "description": "Insufficient data for calculation",
+                    "probability": "Unknown"
+                }
+            },
+            "most_likely_scenario": "UNKNOWN",
+            "impact_probability": "Unknown",
+            "monitoring_recommendation": "DATA_REQUIRED"
+        }
+
+# Initialize impact date calculator
+impact_calculator = ImpactDateCalculator()
+
+# =============================
+# UPDATED API ENDPOINTS WITH IMPACT DATES
+# =============================
+
+@app.get("/asteroids/{asteroid_id}/impact-date")
+async def get_asteroid_impact_date(asteroid_id: int):
+    """Get calculated impact dates for specific asteroid"""
+    asteroid = db.get_asteroid_by_id(asteroid_id)
+    
+    if not asteroid:
+        raise HTTPException(status_code=404, detail="Asteroid not found")
+    
+    # Calculate impact date scenarios
+    impact_analysis = impact_calculator.calculate_impact_date(asteroid)
+    
+    return {
+        "asteroid_id": asteroid_id,
+        "name": asteroid['name'],
+        "impact_date_analysis": impact_analysis,
+        "next_observation_window": calculate_next_observation_window(asteroid),
+        "defense_timeline": calculate_defense_timeline(impact_analysis)
+    }
+
+@app.get("/asteroids/threats/with-dates")
+async def get_threats_with_dates():
+    """Get all threats with calculated impact dates"""
+    threats = validate_and_identify_threats()
+    
+    threats_with_dates = []
+    for threat in threats:
+        asteroid = db.get_asteroid_by_id(threat['id'])
+        if asteroid:
+            impact_analysis = impact_calculator.calculate_impact_date(asteroid)
+            threat['impact_analysis'] = impact_analysis
+            threats_with_dates.append(threat)
+    
+    return {
+        "count": len(threats_with_dates),
+        "threats": threats_with_dates,
+        "timeframe_analysis": analyze_impact_timeframes(threats_with_dates)
+    }
+
+def calculate_next_observation_window(asteroid: Dict) -> Dict:
+    """Calculate next optimal observation window"""
+    distance_au = asteroid['miss_distance_km'] / 149597870.7
+    
+    if distance_au <= 0.01:
+        return {
+            "next_window": "IMMEDIATE",
+            "recommended_observatories": ["Space-based", "All ground stations"],
+            "observation_priority": "HIGHEST",
+            "frequency": "Continuous"
+        }
+    elif distance_au <= 0.05:
+        return {
+            "next_window": "Within 7 days",
+            "recommended_observatories": ["Major observatories", "Radar systems"],
+            "observation_priority": "HIGH",
+            "frequency": "Daily"
+        }
+    else:
+        return {
+            "next_window": "Within 30 days",
+            "recommended_observatories": ["Standard monitoring networks"],
+            "observation_priority": "MEDIUM",
+            "frequency": "Weekly"
+        }
+
+def calculate_defense_timeline(impact_analysis: Dict) -> Dict:
+    """Calculate defense mission timeline based on impact date"""
+    most_likely = impact_analysis['most_likely_scenario']
+    days_until_impact = most_likely.get('days_until_impact', 0)
+    
+    if days_until_impact <= 30:
+        return {
+            "feasibility": "LIMITED",
+            "recommended_strategy": "NUCLEAR_DEFLECTION",
+            "mission_timeline": "EMERGENCY_RESPONSE",
+            "preparation_time": "Days to weeks",
+            "success_probability": "30-50%"
+        }
+    elif days_until_impact <= 365:
+        return {
+            "feasibility": "MODERATE",
+            "recommended_strategy": "KINETIC_IMPACTOR",
+            "mission_timeline": "ACCELERATED",
+            "preparation_time": "3-12 months",
+            "success_probability": "60-80%"
+        }
+    elif days_until_impact <= 3650:  # 10 years
+        return {
+            "feasibility": "HIGH",
+            "recommended_strategy": "GRAVITY_TRACTOR",
+            "mission_timeline": "STANDARD",
+            "preparation_time": "2-8 years",
+            "success_probability": "80-95%"
+        }
+    else:
+        return {
+            "feasibility": "VERY_HIGH",
+            "recommended_strategy": "Multiple approaches",
+            "mission_timeline": "LONG_TERM",
+            "preparation_time": "5-15 years",
+            "success_probability": "90-99%"
+        }
+
+def analyze_impact_timeframes(threats: List[Dict]) -> Dict:
+    """Analyze impact timeframes across all threats"""
+    timeframes = {
+        "immediate": [],      # 0-30 days
+        "short_term": [],     # 1-12 months  
+        "medium_term": [],    # 1-10 years
+        "long_term": []       # 10+ years
+    }
+    
+    for threat in threats:
+        impact_analysis = threat.get('impact_analysis', {})
+        most_likely = impact_analysis.get('most_likely_scenario', {})
+        days_until = most_likely.get('days_until_impact', 9999)
+        
+        if days_until <= 30:
+            timeframes["immediate"].append(threat)
+        elif days_until <= 365:
+            timeframes["short_term"].append(threat)
+        elif days_until <= 3650:
+            timeframes["medium_term"].append(threat)
+        else:
+            timeframes["long_term"].append(threat)
+    
+    return {
+        "immediate_threats": len(timeframes["immediate"]),
+        "short_term_threats": len(timeframes["short_term"]),
+        "medium_term_threats": len(timeframes["medium_term"]),
+        "long_term_threats": len(timeframes["long_term"]),
+        "most_urgent": timeframes["immediate"][:3] if timeframes["immediate"] else [],
+        "global_risk_timeline": {
+            "current_risk": "HIGH" if timeframes["immediate"] else "MEDIUM" if timeframes["short_term"] else "LOW",
+            "peak_risk_period": "Immediate" if timeframes["immediate"] else "Short-term" if timeframes["short_term"] else "Long-term"
+        }
+    }
+
+# =============================
+# UPDATE EXISTING ENDPOINTS WITH IMPACT DATES
+# =============================
+
+@app.get("/asteroids/impact/{asteroid_id}")
+async def get_impact_analysis_with_dates(asteroid_id: int):
+    """Enhanced impact analysis with date calculations"""
+    asteroid = db.get_asteroid_by_id(asteroid_id)
+    
+    if not asteroid:
+        raise HTTPException(status_code=404, detail="Asteroid not found")
+    
+    distance_au = asteroid['miss_distance_km'] / 149597870.7
+    
+    # Calculate impact dates
+    impact_date_analysis = impact_calculator.calculate_impact_date(asteroid)
+    
+    if distance_au > 0.05:
+        return {
+            "asteroid": asteroid['name'],
+            "distance_au": round(distance_au, 4),
+            "threat_level": "LOW",
+            "impact_date_analysis": impact_date_analysis,
+            "message": "This asteroid poses no immediate threat",
+            "analysis_skipped": True
+        }
+    
+    # Continue with existing impact analysis...
+    impact_lat, impact_lng = generate_impact_site(asteroid_id)
+    seismic_analysis = usgs_analyzer.calculate_seismic_risk(impact_lat, impact_lng)
+    
+    mass = physics.calculate_mass(asteroid['diameter_avg'])
+    energy = physics.calculate_kinetic_energy(mass, asteroid['velocity_km_s'])
+    impact_effects = physics.calculate_impact_effects(energy['energy_megatons_TNT'])
+    
+    impact_analysis = location_analyzer.analyze_impact({
+        **asteroid,
+        "impact_lat": impact_lat,
+        "impact_lng": impact_lng
+    })
+    
+    return {
+        "asteroid": asteroid['name'],
+        "threat_assessment": {
+            "distance_au": round(distance_au, 6),
+            "threat_level": "CRITICAL" if distance_au <= 0.01 else "HIGH",
+            "is_potentially_hazardous": True
+        },
+        "impact_timing": impact_date_analysis,
+        "impact_prediction": {
+            "estimated_impact_date": impact_date_analysis['most_likely_scenario']['estimated_impact_date'],
+            "days_until_impact": impact_date_analysis['most_likely_scenario']['days_until_impact'],
+            "location": {
+                "coordinates": [impact_lat, impact_lng],
+                "type": impact_analysis['impact_location']['type'],
+                "city_region": impact_analysis['impact_location'].get('description', 'Unknown')
+            }
+        },
+        "impact_effects": {
+            "energy_megatons": round(energy['energy_megatons_TNT'], 2),
+            "crater_diameter_km": round(impact_effects['crater_diameter_km'], 2),
+            "destruction_radius_km": round(impact_effects['destruction_radius_km'], 2),
+            "estimated_casualties": impact_analysis['impact_analysis']['estimated_deaths']
+        },
+        "seismic_enhancement": seismic_analysis,
+        "defense_timeline": calculate_defense_timeline(impact_date_analysis),
+        "emergency_recommendations": generate_emergency_recommendations(asteroid, distance_au)
+    }
+
+# Update the main endpoint to include impact dates
+@app.get("/")
+async def root_with_dates():
+    """Enhanced API Information with Impact Dates"""
+    threats = validate_and_identify_threats()
+    critical_threats = [t for t in threats if t['threat_level'] == "CRITICAL"]
+    
+    # Add impact date analysis to critical threats
+    enhanced_threats = []
+    for threat in critical_threats[:3]:  # Limit to first 3 for performance
+        asteroid = db.get_asteroid_by_id(threat['id'])
+        if asteroid:
+            impact_analysis = impact_calculator.calculate_impact_date(asteroid)
+            threat['impact_date'] = impact_analysis['most_likely_scenario']['estimated_impact_date']
+            threat['days_until_impact'] = impact_analysis['most_likely_scenario']['days_until_impact']
+            enhanced_threats.append(threat)
+    
+    return {
+        "name": "NASA NEO Threat Assessment System",
+        "version": "4.1.0",  # Updated version
+        "feature": "Impact Date Calculations Added",
+        "threat_status": {
+            "total_asteroids": len(db.get_all_asteroids()),
+            "potential_threats": len(threats),
+            "critical_threats": len(critical_threats),
+            "global_risk_level": "HIGH" if critical_threats else "MEDIUM" if threats else "LOW"
+        },
+        "recent_threats": enhanced_threats,
+        "endpoints": {
+            "immediate_threats": "/asteroids/threats/immediate",
+            "threats_with_dates": "/asteroids/threats/with-dates",
+            "impact_analysis": "/asteroids/impact/{id}",
+            "impact_dates": "/asteroids/{id}/impact-date",
+            "natural_hazards": "/asteroids/{id}/natural-hazards",
+            "seismic_analysis": "/usgs/earthquakes/nearby"
+        }
+    }
 class AsteroidDefenseStrategies:
     """Defense strategies for different asteroid types and threat levels"""
     

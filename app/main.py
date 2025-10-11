@@ -144,7 +144,7 @@ class AsteroidTypeClassifier:
             "name": "G-type",
             "description": "Similar to C-type with UV absorption.",
             "albedo_range": (0.05, 0.09),
-            "image_url": "/static/images/asteroids/g-type.jpg",
+            "image_url": ".//pics/g-type.png",
             "characteristics": ["Dark", "Carbonaceous", "UV absorption"],
             "composition": "Carbonaceous materials with organics"
         },
@@ -152,7 +152,7 @@ class AsteroidTypeClassifier:
             "name": "U-type (Unclassified)",
             "description": "Does not fit standard classifications.",
             "albedo_range": (0.0, 1.0),
-            "image_url": "/static/images/asteroids/u-type.jpg",
+            "image_url": ".//pics/u-type.png",
             "characteristics": ["Unusual spectrum", "Rare"],
             "composition": "Variable"
         },

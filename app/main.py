@@ -1034,6 +1034,31 @@ async def get_raw_data(
         "include_defense": include_defense,
         "data": asteroids_data
     }
+
+@app.get("/asteroids/by-name/{asteroid_name}")
+async def get_asteroid_by_name(asteroid_name: str):
+    """Get specific asteroid data by name"""
+    df = db.get_all_asteroids()
+    
+    if df.empty:
+        raise HTTPException(status_code=404, detail="No asteroid data available")
+    
+    # Find asteroid by name (case insensitive)
+    asteroid = df[df['name'].str.lower() == asteroid_name.lower()]
+    
+    if asteroid.empty:
+        raise HTTPException(status_code=404, detail=f"Asteroid '{asteroid_name}' not found")
+    
+    asteroid_dict = asteroid.iloc[0].to_dict()
+    
+    # Add spectral classification
+    spectral_classification = asteroid_classifier.classify_asteroid(asteroid_dict['id'])
+    asteroid_dict['spectral_classification'] = spectral_classification
+    
+    # Format date for frontend
+    asteroid_dict['impact_date'] = asteroid_dict['date']
+    
+    return asteroid_dict
 # def get_coastal_impact(lat: float, lng: float):
 #     """تحديد تأثير السواحل بدقة"""
 #     is_ocean = location_analyzer.is_ocean_location(lat, lng)

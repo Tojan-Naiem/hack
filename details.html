@@ -306,7 +306,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(41, 67, 86, 0.1);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -332,7 +332,7 @@
         }
 
         .data-label {
-            color: #a0c8ff;
+            color: #183d72;
             font-size: 0.9rem;
         }
 
@@ -453,6 +453,7 @@
             background: rgba(11, 27, 43, 0.5);
             padding: 15px;
             border-radius: 15px;
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(79, 195, 247, 0.3);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
@@ -466,9 +467,9 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .status-group {
+       /* .status-group {
             margin-top: 25px;
-        }
+        }*/
 
         .defense-group {
             background: rgba(79, 195, 247, 0.03);
@@ -679,6 +680,18 @@
             font-size: 10px;
             z-index: 4;
         }
+        .navbar-logo a {
+    color: inherit;      /* Keep the same color as parent */
+    text-decoration: none; /* Remove underline */
+}
+
+/* Optional: prevent hover/active changes */
+.navbar-logo a:hover,
+.navbar-logo a:active {
+    color: inherit;
+    text-decoration: none;
+}
+
     </style>
 </head>
 <body>
@@ -704,13 +717,14 @@
     </div>
 
 
-     <nav class="navbar">
+      <nav class="navbar">
         <div class="navbar-content">
-            <div class="navbar-logo">Beyond Us</div>
+            <div class="navbar-logo"><a href="index.html">Beyond Us</a></div>
             <ul class="navbar-menu">
-               <li><a href="index.html">About</a></li>
+               <li><a href="index.html#ab">About</a></li>
+
           <li><a href="asteroids.html">Discover</a></li>
-         <li><a href="try.html" >Try</a></li>
+         <li><a href="try.html" >Simulate</a></li>
             </ul>
         </div>
     </nav>
@@ -790,19 +804,18 @@
             <div class="danger-level">HIGH RISK</div>
         </div>
 
-        <div class="controls">
+        <!-- <div class="controls">
             <button class="control-btn" onclick="restartSimulation()">Restart</button>
             <button class="control-btn" onclick="pauseSimulation()">Pause</button>
            
 
-
-</div>
+</div> -->
 
 <!-- قسم جديد لمحاكاة الدفاع -->
 <section id="defense-simulation">
     <div class="container">
         <header>
-            <h1>🌍 Planetary Defense System - Live Simulation</h1>
+            <h1>Planetary Defense System - Live Simulation</h1>
             <p class="subtitle">Real-time Tracking of Asteroid Movement Towards Earth</p>
         </header>
 
@@ -829,7 +842,7 @@
                 <div class="control-group defense-group">
                     <h3>Defense Systems</h3>
                     <button class="defense-btn auto" onclick="startAutoMovement()">
-                        🚀 Start Auto Movement
+                        Start Auto Movement
                     </button>
                     <button class="defense-btn success" onclick="activateDefense('success')">
                         Successful Defense - Change Course
@@ -847,7 +860,7 @@
         
             </div>
             <div class="control-group status-group">
-                    <h3>📊 Mission Status</h3>
+                    <h3>Mission Status</h3>
                     <div class="status-panel">
                         <div class="status-item">
                             <span>Status:</span>
@@ -890,16 +903,16 @@ async function fetchAsteroidDetails(asteroidName) {
             `;
             
             return {
-                impactDate: asteroid.impact_date || "2028-06-15T18:30:00" // default date if not provided
+                impactDate: asteroid.date + 'T18:30:00'
             };
         }
         return {
-            impactDate: "2028-06-15T18:30:00" // default date
+            impactDate: null // No fallback - data must come from API
         };
     } catch (error) {
         console.error('Error fetching asteroid data:', error);
         return {
-            impactDate: "2028-06-15T18:30:00" // default date
+            impactDate: null // No fallback - data must come from API
         };
     }
 }
@@ -909,29 +922,69 @@ async function fetchAsteroidDetails(asteroidName) {
 const urlParams = new URLSearchParams(window.location.search);
 const asteroidName = urlParams.get('asteroid');
 
-// Initialize with a placeholder date
-let impactDate = "2028-06-15T18:30:00";
+// Initialize with empty value - will be set from API data
+let impactDate;
 
 // Fetch asteroid details when page loads
 document.addEventListener('DOMContentLoaded', async function() {
     const details = await fetchAsteroidDetails(asteroidName);
     impactDate = details.impactDate;
-
+    
+    // Initialize countdown after getting the correct date
+    initializeCountdown();
 });
-
 
 // باقي كود الكاونتداون...
 
-// استخدم impactDate عشان تعمل الكاونتداون
-const targetDate = new Date(impactDate).getTime();
+let targetDate;
+
+// Initialize countdown function
+function initializeCountdown() {
+    console.log('Initializing countdown with impactDate:', impactDate);
+    
+    // Check if we have valid impact date from API
+    if (!impactDate) {
+        console.error('No impact date available from API data');
+        return;
+    }
+    
+    targetDate = new Date(impactDate).getTime();
+    
+    // Check if targetDate is valid
+    if (isNaN(targetDate)) {
+        console.error('Invalid targetDate:', targetDate, 'impactDate:', impactDate);
+        return;
+    }
+    
+    console.log('Target date set to:', new Date(targetDate));
+    
+    // تشغيل الكاونتداون أول مرة
+    updateCountdown();
+    
+    // تحديث الكاونتداون كل ثانية
+    setInterval(updateCountdown, 1000);
+}
 
 // باقي كود الكاونتداون...
 
     function updateCountdown() {
+        // Check if targetDate is valid
+        /*if (!targetDate || isNaN(targetDate)) {
+            console.error('Invalid targetDate in updateCountdown:', targetDate);
+            return;
+        }*/
+        
         const now = new Date().getTime();
         const timeLeft = targetDate - now;
 
-        
+        // If time has passed, show 0
+        if (timeLeft <= 0) {
+            document.getElementById('days').textContent = '00';
+            document.getElementById('hours').textContent = '00';
+            document.getElementById('minutes').textContent = '00';
+            document.getElementById('seconds').textContent = '00';
+            return;
+        }
 
         // حساب الوقت المتبقي للاصطدام
         const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
@@ -946,11 +999,6 @@ const targetDate = new Date(impactDate).getTime();
         document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
     }
 
-    // تشغيل الكاونتداون أول مرة
-    updateCountdown();
-
-    // تحديث الكاونتداون كل ثانية
-    setInterval(updateCountdown, 1000);
 
 
 

@@ -268,6 +268,18 @@
 .glass-button:active {
   transform: translateY(0);
 }
+.navbar-logo a {
+    color: inherit;      /* Keep the same color as parent */
+    text-decoration: none; /* Remove underline */
+}
+
+/* Optional: prevent hover/active changes */
+.navbar-logo a:hover,
+.navbar-logo a:active {
+    color: inherit;
+    text-decoration: none;
+}
+
     </style>
   </head>
   <body>
@@ -300,14 +312,15 @@
     </div>
 
     <nav class="navbar">
-      <div class="navbar-content">
-        <div class="navbar-logo">Beyond Us</div>
-        <ul class="navbar-menu">
-          <li><a href="index.html">About</a></li>
+        <div class="navbar-content">
+            <div class="navbar-logo"><a href="index.html">Beyond Us</a></div>
+            <ul class="navbar-menu">
+              <li><a href="index.html#ab">About</a></li>
+
           <li><a href="asteroids.html">Discover</a></li>
-         <li><a href="try.html" >Try</a></li>
-        </ul>
-      </div>
+         <li><a href="try.html" >Simulate</a></li>
+            </ul>
+        </div>
     </nav>
 
     <div class="content">
@@ -317,8 +330,8 @@
           See the Risk, Test Solutions
         </h1>
       </div>
-      <div class="t1 t2"></div>
-      <div class="t1 about">
+      <div class="t1 t2" id="ab"></div>
+      <div class="t1 about" >
         <p>
           Explore asteroids that could potentially strike Earth. Visualize
           their orbits in 3D, estimate impact effects, and run simple

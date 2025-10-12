@@ -20,12 +20,7 @@ const spaceMap = document.getElementById('space-map');
             asteroid.style.top = currentPosition.y + 'px';
             spaceMap.appendChild(asteroid);
 
-            // Add trajectory
-            const trajectory = document.createElement('div');
-            trajectory.className = 'trajectory';
-            trajectory.id = 'trajectory';
-            updateTrajectory();
-            spaceMap.appendChild(trajectory);
+            // Remove trajectory - not needed
 
             updateStatus('Waiting to Start', '--', '--', '--');
             updateCountdown();
@@ -49,7 +44,6 @@ const spaceMap = document.getElementById('space-map');
                 currentPosition.y += 3;
                 
                 updateAsteroidPosition();
-                updateTrajectory();
                 updateCountdown();
                 updateDistance();
                 
@@ -70,22 +64,7 @@ const spaceMap = document.getElementById('space-map');
             }
         }
 
-        // تحديث المسار
-        function updateTrajectory() {
-            const trajectory = document.getElementById('trajectory');
-            if (trajectory) {
-                const earthX = 800, earthY = 450;
-                const dx = earthX - currentPosition.x;
-                const dy = earthY - currentPosition.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                
-                trajectory.style.left = currentPosition.x + 'px';
-                trajectory.style.top = currentPosition.y + 'px';
-                trajectory.style.width = distance + 'px';
-                trajectory.style.transform = `rotate(${angle}deg)`;
-            }
-        }
+        // Remove trajectory function - not needed
 
         // تحديث العد التنازلي
         function updateCountdown() {
@@ -152,8 +131,7 @@ const spaceMap = document.getElementById('space-map');
             }
             
             updateAsteroidPosition();
-            updateTrajectory();
-            updateStatus(status, 'تم تجنب الاصطدام', danger, energy);
+            updateStatus(status, 'Collision avoided Successfully!', danger, energy);
         }
 
         // Impact
@@ -200,7 +178,7 @@ const spaceMap = document.getElementById('space-map');
             currentPosition = { x: 50, y: 150 };
             timeLeft = 30;
             
-            document.querySelectorAll('#asteroid, #trajectory, .fragments, .explosion').forEach(el => el.remove());
+            document.querySelectorAll('#asteroid, .fragments, .explosion').forEach(el => el.remove());
             initializeSimulation();
         }
 
